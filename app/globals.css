@@ -2,25 +2,85 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
+}
+::selection { background: #dbeafe; color: #1d4ed8; }
+
+.hero-glow {
+  background:
+    radial-gradient(circle at 78% 43%, rgba(96, 165, 250, .20), transparent 24%),
+    radial-gradient(circle at 58% 60%, rgba(224, 242, 254, .75), transparent 32%),
+    linear-gradient(180deg, #f8fbff 0%, #fff 78%);
+}
+
+.section-label {
+  margin-bottom: 1rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+.section-title {
+  font-size: clamp(2.15rem, 4.5vw, 4rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -.05em;
+}
+.section-copy {
+  margin-top: 1.25rem;
+  max-width: 38rem;
+  font-size: 1rem;
+  line-height: 1.9;
+  color: #64748b;
+}
+.service-card {
+  min-height: 11rem;
+  border: 1px solid #eef2f7;
+  border-radius: 1.75rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .02);
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.service-card:hover {
+  transform: translateY(-4px);
+  border-color: #bfdbfe;
+  box-shadow: 0 20px 45px -28px rgba(37, 99, 235, .35);
+}
+.contact-panel {
+  position: relative;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(96, 165, 250, .45), transparent 26%),
+    radial-gradient(circle at 90% 80%, rgba(14, 165, 233, .25), transparent 30%),
+    #1559d6;
+}
+.contact-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .16;
+  background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; }
 }
