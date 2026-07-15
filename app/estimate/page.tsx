@@ -31,7 +31,7 @@ export default function EstimatePage() {
           </div>
         </div>
       </section>
-      <EstimateForm />
+      <EstimateForm testMode={process.env.ESTIMATE_TEST_MODE === "true"} />
       <SiteFooter />
     </main>
   );

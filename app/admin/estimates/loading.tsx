@@ -1,0 +1,2 @@
+import { Skeleton } from "@/components/ui/skeleton";
+export default function EstimatesLoading() { return <div className="space-y-6"><div><Skeleton className="h-4 w-32" /><Skeleton className="mt-3 h-9 w-48" /><Skeleton className="mt-3 h-4 w-80 max-w-full" /></div><div className="rounded-xl border border-slate-200 bg-white p-5"><Skeleton className="h-10 w-80 max-w-full" /><div className="mt-6 space-y-4">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-14 w-full" />)}</div></div></div>; }

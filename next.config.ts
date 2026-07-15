@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  basePath: "/ec",
+  serverExternalPackages: ["pdfkit"],
+  outputFileTracingIncludes: {
+    "/admin/estimates/*/pdf": ["./node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-400-normal.woff", "./node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-700-normal.woff"],
+    "/account/estimates/*/pdf": ["./node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-400-normal.woff", "./node_modules/@fontsource/noto-sans-jp/files/noto-sans-jp-japanese-700-normal.woff"],
+  },
 };
 
 export default nextConfig;

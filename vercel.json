@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "redirects": [
+    { "source": "/", "destination": "/ec", "permanent": true },
+    { "source": "/estimate/:path*", "destination": "/ec/estimate/:path*", "permanent": true },
+    { "source": "/contact", "destination": "/ec/contact", "permanent": true },
+    { "source": "/admin/:path*", "destination": "/ec/admin/:path*", "permanent": false },
+    { "source": "/account/:path*", "destination": "/ec/account/:path*", "permanent": false }
+  ]
+}

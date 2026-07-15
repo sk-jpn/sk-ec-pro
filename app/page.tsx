@@ -24,6 +24,7 @@ import {
   Warehouse,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { SiteFooter, SiteHeader } from "./components/site-chrome";
 
 const services = [
@@ -332,13 +333,13 @@ export default function Home() {
             <h2 className="text-4xl font-semibold leading-tight tracking-[-0.05em] sm:text-6xl">購入したい商品のURLを<br className="hidden sm:block" />お送りください</h2>
             <p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-blue-100 sm:text-base">商品URL、数量、色、サイズなどを確認し、無料でお見積りします。</p>
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <a href="/estimate" className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-semibold text-blue-700 shadow-xl shadow-blue-950/20 transition hover:-translate-y-0.5">
+              <Link href="/estimate" className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-semibold text-blue-700 shadow-xl shadow-blue-950/20 transition hover:-translate-y-0.5">
                 無料見積を依頼する
                 <ArrowRight size={17} className="transition group-hover:translate-x-1" />
-              </a>
-              <a href="/contact" className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-7 py-4 text-sm font-semibold text-white transition hover:bg-white/20">
+              </Link>
+              <Link href="/contact" className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-7 py-4 text-sm font-semibold text-white transition hover:bg-white/20">
                 お問い合わせ
-              </a>
+              </Link>
             </div>
           </div>
         </div>

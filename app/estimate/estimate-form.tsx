@@ -1,249 +1,95 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  CirclePlus,
-  ClipboardCheck,
-  Info,
-  Package,
-  Send,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, CirclePlus, ClipboardCheck, ImagePlus, Info, Package, Pencil, Send, Trash2, Truck, UserRound, X } from "lucide-react";
+import { withBasePath } from "@/config/site";
 
-type Product = {
-  id: number;
-  url: string;
-  quantity: string;
-  color: string;
-  size: string;
-  model: string;
-  request: string;
-};
+type ProductImage = { id: string; file: File; preview: string };
+type Product = { id: number; url: string; images: ProductImage[]; quantity: string; color: string; size: string; model: string; request: string };
+type Customer = { name: string; email: string; company: string; phone: string; marketplace: string; sellerQuestion: string; shipping: string; deadline: string; prefecture: string; notes: string; privacy: boolean };
+type Step = "input" | "confirm" | "complete";
 
-type Customer = {
-  name: string;
-  email: string;
-  company: string;
-  phone: string;
-  marketplace: string;
-  sellerQuestion: string;
-  shipping: string;
-  deadline: string;
-  prefecture: string;
-  notes: string;
-  privacy: boolean;
-};
+const emptyProduct = (id: number): Product => ({ id, url: "", images: [], quantity: "1", color: "", size: "", model: "", request: "" });
+const initialCustomer: Customer = { name: "", email: "", company: "", phone: "", marketplace: "", sellerQuestion: "", shipping: "おまかせ", deadline: "", prefecture: "", notes: "", privacy: false };
+const prefectures = ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"];
+const marketplaces = ["Taobao（淘宝）", "1688", "Xianyu（闲鱼・咸鱼）", "Tmall（天猫）", "Alibaba", "その他"];
 
-const emptyProduct = (id: number): Product => ({
-  id,
-  url: "",
-  quantity: "1",
-  color: "",
-  size: "",
-  model: "",
-  request: "",
-});
-
-const initialCustomer: Customer = {
-  name: "",
-  email: "",
-  company: "",
-  phone: "",
-  marketplace: "",
-  sellerQuestion: "",
-  shipping: "おまかせ",
-  deadline: "",
-  prefecture: "",
-  notes: "",
-  privacy: false,
-};
-
-const prefectures = [
-  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
-  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
-  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
-  "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
-  "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
-  "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
-  "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
-];
-
-const inputClass = "mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
-const textareaClass = `${inputClass} min-h-28 resize-y py-3`;
-
-function Required() {
-  return <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">必須</span>;
+function fieldClass(error?: string, textarea = false) {
+  return `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-300 focus:ring-4 ${textarea ? "min-h-32 resize-y py-3" : ""} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-100"}`;
 }
 
-function ErrorText({ message, id }: { message?: string; id: string }) {
-  if (!message) return null;
-  return <p id={id} className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600"><AlertCircle size={13} />{message}</p>;
+function Required() { return <span className="ml-2 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">必須</span>; }
+function ErrorText({ message, id }: { message?: string; id: string }) { return message ? <p id={id} className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-red-600"><AlertCircle size={14} />{message}</p> : null; }
+
+function StepIndicator({ current }: { current: Step }) {
+  const active = current === "input" ? 0 : current === "confirm" ? 1 : 2;
+  return <ol className="mx-auto mb-10 flex max-w-3xl items-center" aria-label="見積依頼の進行状況">
+    {["入力", "確認", "送信完了"].map((label, index) => <li key={label} className={`flex items-center ${index < 2 ? "flex-1" : ""}`} aria-current={active === index ? "step" : undefined}>
+      <div className="flex min-w-16 flex-col items-center gap-2 text-center"><span className={`grid size-9 place-items-center rounded-full text-sm font-bold ${index <= active ? "bg-blue-600 text-white" : "border border-slate-200 bg-white text-slate-400"}`}>{index < active ? <CheckCircle2 size={18} /> : index + 1}</span><span className={`text-[10px] font-bold tracking-wider sm:text-xs ${active === index ? "text-blue-700" : "text-slate-400"}`}>STEP {index + 1}<span className="mt-0.5 block text-xs tracking-normal sm:text-sm">{label}</span></span></div>
+      {index < 2 && <span className={`mx-2 h-px flex-1 sm:mx-5 ${index < active ? "bg-blue-500" : "bg-slate-200"}`} />}
+    </li>)}
+  </ol>;
 }
 
-function safeUrl(value: string) {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
+function Card({ title, icon, children, action }: { title: string; icon: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
+  return <section className="rounded-[1.5rem] border border-slate-100 bg-white p-5 shadow-[0_20px_60px_-50px_rgba(15,23,42,.35)] sm:rounded-[2rem] sm:p-8"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">{icon}</span><h2 className="text-xl font-semibold tracking-tight">{title}</h2></div>{action}</div>{children}</section>;
 }
 
-export function EstimateForm() {
+function ReviewRows({ rows }: { rows: string[][] }) {
+  return <dl className="mt-6 divide-y divide-slate-100">{rows.filter(([, value]) => value).map(([label, value]) => <div key={label} className="grid gap-1 py-4 sm:grid-cols-[12rem_1fr]"><dt className="text-sm font-medium text-slate-400">{label}</dt><dd className="whitespace-pre-wrap break-all text-sm leading-7 text-slate-800">{value}</dd></div>)}</dl>;
+}
+
+function safeUrl(value: string) { try { const parsed = new URL(value); return parsed.protocol === "http:" || parsed.protocol === "https:"; } catch { return false; } }
+const acceptedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+function ProductImages({ product, error, onAdd, onRemove }: { product: Product; error?: string; onAdd: (files: File[]) => void; onRemove: (imageId: string) => void }) {
+  const receive = (files: FileList | null) => files && onAdd(Array.from(files));
+  return <div className="sm:col-span-2"><p className="text-sm font-medium text-slate-700">商品画像 <span className="text-xs font-normal text-slate-400">（任意・最大10枚）</span></p><label onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); receive(event.dataTransfer.files); }} className={`mt-2 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed bg-white px-4 py-5 text-center transition hover:bg-blue-50/50 ${error ? "border-red-400" : "border-blue-200"}`}><ImagePlus className="text-blue-500" size={24} /><span className="mt-2 text-sm font-semibold text-blue-700">画像を選択またはドラッグ＆ドロップ</span><span className="mt-1 text-xs text-slate-400">jpg・jpeg・png・webp / 1枚10MBまで</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => { receive(event.target.files); event.target.value = ""; }} /></label><ErrorText id={`product-${product.id}-images-error`} message={error} />{product.images.length > 0 && <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">{product.images.map((image, index) => <div key={image.id} className="relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white"><Image src={image.preview} alt={`商品画像 ${index + 1}`} fill unoptimized className="object-cover" /><button type="button" onClick={() => onRemove(image.id)} aria-label={`商品画像 ${index + 1}を削除`} className="absolute right-1 top-1 grid size-7 place-items-center rounded-full bg-slate-950/80 text-white"><X size={14} /></button></div>)}</div>}<p className="mt-2 text-right text-xs text-slate-400">{product.images.length}/10枚</p></div>;
+}
+
+export function EstimateForm({ testMode = false }: { testMode?: boolean }) {
+  const fetch = (input: string, init?: RequestInit) => window.fetch(withBasePath(input), init);
   const [customer, setCustomer] = useState<Customer>(initialCustomer);
   const [products, setProducts] = useState<Product[]>([emptyProduct(1)]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [step, setStep] = useState<"input" | "confirm" | "complete">("input");
+  const [step, setStep] = useState<Step>("input");
   const [nextProductId, setNextProductId] = useState(2);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
 
-  const updateCustomer = <K extends keyof Customer>(key: K, value: Customer[K]) => {
-    setCustomer((current) => ({ ...current, [key]: value }));
-    setErrors((current) => {
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const updateProduct = (id: number, key: keyof Omit<Product, "id">, value: string) => {
-    setProducts((current) => current.map((product) => product.id === id ? { ...product, [key]: value } : product));
-    setErrors((current) => {
-      const next = { ...current };
-      delete next[`product-${id}-${key}`];
-      return next;
-    });
-  };
-
-  const addProduct = () => {
-    if (products.length >= 10) return;
-    setProducts((current) => [...current, emptyProduct(nextProductId)]);
-    setNextProductId((current) => current + 1);
-  };
-
-  const removeProduct = (id: number) => {
-    if (products.length === 1) return;
-    setProducts((current) => current.filter((product) => product.id !== id));
-  };
+  const updateCustomer = <K extends keyof Customer>(key: K, value: Customer[K]) => { setCustomer((current) => ({ ...current, [key]: value })); setErrors((current) => { const next = { ...current }; delete next[key]; return next; }); };
+  const updateProduct = (id: number, key: keyof Omit<Product, "id" | "images">, value: string) => { setProducts((current) => current.map((product) => product.id === id ? { ...product, [key]: value } : product)); setErrors((current) => { const next = { ...current }; delete next[`product-${id}-${key}`]; return next; }); };
+  const addImages = (id: number, files: File[]) => { const product = products.find((item) => item.id === id); if (!product) return; const nextError = files.some((file) => !acceptedImageTypes.has(file.type)) ? "jpg・jpeg・png・webp形式の画像を選択してください。" : files.some((file) => file.size > 10 * 1024 * 1024) ? "画像は1枚10MB以内にしてください。" : product.images.length + files.length > 10 ? "画像は1商品につき最大10枚です。" : ""; if (nextError) { setErrors((current) => ({ ...current, [`product-${id}-images`]: nextError })); return; } const images = files.map((file) => ({ id: crypto.randomUUID(), file, preview: URL.createObjectURL(file) })); setProducts((current) => current.map((item) => item.id === id ? { ...item, images: [...item.images, ...images] } : item)); setErrors((current) => { const next = { ...current }; delete next[`product-${id}-images`]; delete next[`product-${id}-url`]; return next; }); };
+  const removeImage = (productId: number, imageId: string) => setProducts((current) => current.map((product) => { if (product.id !== productId) return product; const image = product.images.find((entry) => entry.id === imageId); if (image) URL.revokeObjectURL(image.preview); return { ...product, images: product.images.filter((entry) => entry.id !== imageId) }; }));
+  const addProduct = () => { if (products.length < 10) { setProducts((current) => [...current, emptyProduct(nextProductId)]); setNextProductId((current) => current + 1); } };
+  const removeProduct = (id: number) => { if (products.length > 1) setProducts((current) => { current.find((product) => product.id === id)?.images.forEach((image) => URL.revokeObjectURL(image.preview)); return current.filter((product) => product.id !== id); }); };
 
   const validate = () => {
-    const nextErrors: Record<string, string> = {};
-    if (!customer.name.trim()) nextErrors.name = "お名前を入力してください。";
-    if (!customer.email.trim()) nextErrors.email = "メールアドレスを入力してください。";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) nextErrors.email = "正しい形式のメールアドレスを入力してください。";
-    if (!customer.prefecture) nextErrors.prefecture = "お届け先の都道府県を選択してください。";
-    if (!customer.privacy) nextErrors.privacy = "プライバシーポリシーへの同意が必要です。";
-
-    products.forEach((product) => {
-      if (!product.url.trim()) nextErrors[`product-${product.id}-url`] = "商品URLを入力してください。";
-      else if (!safeUrl(product.url)) nextErrors[`product-${product.id}-url`] = "http:// または https:// から始まるURLを入力してください。";
-      if (!product.quantity || Number(product.quantity) < 1) nextErrors[`product-${product.id}-quantity`] = "数量は1以上で入力してください。";
-      if (!product.request.trim()) nextErrors[`product-${product.id}-request`] = "商品仕様または希望内容を入力してください。";
-    });
-
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      requestAnimationFrame(() => document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
-      return false;
-    }
+    const next: Record<string, string> = {};
+    if (!customer.name.trim()) next.name = "お名前を入力してください。";
+    if (!customer.email.trim()) next.email = "メールアドレスを入力してください。"; else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) next.email = "正しい形式のメールアドレスを入力してください。";
+    if (!customer.prefecture) next.prefecture = "お届け先の都道府県を選択してください。";
+    if (!customer.privacy) next.privacy = "プライバシーポリシーへの同意が必要です。";
+    products.forEach((product) => { if (!product.url.trim() && product.images.length === 0) next[`product-${product.id}-url`] = "商品URLまたは商品画像を1つ以上入力してください。"; else if (product.url.trim() && !safeUrl(product.url)) next[`product-${product.id}-url`] = "http:// または https:// から始まるURLを入力してください。"; if (!product.quantity || Number(product.quantity) < 1) next[`product-${product.id}-quantity`] = "数量は1以上で入力してください。"; });
+    setErrors(next);
+    if (Object.keys(next).length) { requestAnimationFrame(() => { const first = document.querySelector<HTMLElement>("[aria-invalid='true']"); first?.scrollIntoView({ behavior: "smooth", block: "center" }); first?.focus({ preventScroll: true }); }); return false; }
     return true;
   };
 
-  const showConfirmation = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (validate()) {
-      setStep("confirm");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+  const showConfirmation = (event: React.FormEvent) => { event.preventDefault(); if (validate()) { setStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); } };
+  const edit = () => { setSendError(""); setStep("input"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const submitEstimate = async () => { if (isSending) return; setIsSending(true); setSendError(""); try { const formData = new FormData(); formData.set("payload", JSON.stringify({ customer, products: products.map(({ images, ...product }) => ({ ...product, imageCount: images.length })) })); products.forEach((product, index) => product.images.forEach((image) => formData.append(`product-${index}-images`, image.file, image.file.name))); const response = await fetch("/api/estimate", { method: "POST", body: formData }); const result = await response.json().catch(() => null) as { message?: string } | null; if (!response.ok) throw new Error(result?.message || "送信に失敗しました。時間をおいて再度お試しください。"); setStep("complete"); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (error) { setSendError(error instanceof Error ? error.message : "送信に失敗しました。時間をおいて再度お試しください。"); } finally { setIsSending(false); } };
 
-  if (step === "complete") {
-    return (
-      <section className="mx-auto w-full max-w-4xl px-5 py-24 text-center sm:px-8 sm:py-32">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-600/20"><CheckCircle2 size={30} /></span>
-        <p className="section-label mt-8">Development Preview</p>
-        <h2 className="section-title">入力内容を確認しました</h2>
-        <p className="mx-auto mt-6 max-w-xl text-base leading-8 text-slate-600">見積フォームの送信機能は現在準備中です。</p>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500">この操作ではメール送信、データ保存、外部サービスへの送信は行われていません。</p>
-        <button type="button" onClick={() => setStep("input")} className="mt-9 inline-flex min-h-12 items-center justify-center rounded-full border border-slate-200 px-6 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-600">入力画面に戻る</button>
-      </section>
-    );
-  }
+  if (step === "complete") return <section className="border-t border-slate-100 bg-slate-50/70 py-16 sm:py-24"><div className="mx-auto max-w-5xl px-5 sm:px-8"><StepIndicator current="complete" /><div className="rounded-[2rem] border border-emerald-100 bg-white px-6 py-16 text-center sm:px-10 sm:py-20"><span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-500 text-white shadow-xl shadow-emerald-500/20"><CheckCircle2 size={32} /></span><h2 className="mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">ありがとうございます。</h2><p className="mt-5 text-lg text-slate-700">見積依頼を受け付けました。</p>{testMode ? <p className="mt-4 text-sm text-slate-500">（現在はテスト環境のためメール送信は行われません。）</p> : <p className="mt-4 text-sm text-slate-500">通常1営業日以内にご返信いたします。</p>}</div></div></section>;
 
-  if (step === "confirm") {
-    const customerRows = [
-      ["お名前", customer.name], ["メールアドレス", customer.email], ["会社名", customer.company],
-      ["電話番号", customer.phone], ["中国ECサイト名", customer.marketplace], ["出品者に確認したい内容", customer.sellerQuestion],
-      ["希望する配送方法", customer.shipping], ["希望納期", customer.deadline], ["お届け先都道府県", customer.prefecture], ["備考", customer.notes],
-    ];
-    return (
-      <section className="border-t border-slate-100 bg-slate-50/70 py-20 sm:py-24">
-        <div className="mx-auto max-w-5xl px-5 sm:px-8">
-          <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-blue-600 text-white"><ClipboardCheck size={21} /></span><div><p className="section-label !mb-1">Confirmation</p><h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">入力内容の確認</h2></div></div>
-          <p className="mt-5 text-sm leading-7 text-slate-500">内容をご確認ください。この段階ではまだ送信されません。</p>
-          <div className="mt-10 space-y-5">
-            <section className="rounded-[1.75rem] border border-slate-100 bg-white p-6 sm:p-8"><h3 className="font-semibold">お客様情報</h3><dl className="mt-6 divide-y divide-slate-100">{customerRows.filter(([, value]) => value).map(([label, value]) => <div key={label as string} className="grid gap-1 py-4 sm:grid-cols-[13rem_1fr]"><dt className="text-sm font-medium text-slate-400">{label as string}</dt><dd className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-800">{value as string}</dd></div>)}</dl></section>
-            {products.map((product, index) => <section key={product.id} className="rounded-[1.75rem] border border-slate-100 bg-white p-6 sm:p-8"><h3 className="font-semibold">商品 {index + 1}</h3><dl className="mt-6 divide-y divide-slate-100">{[["商品URL", product.url], ["数量", product.quantity], ["色", product.color], ["サイズ", product.size], ["型番", product.model], ["希望内容", product.request]].filter(([, value]) => value).map(([label, value]) => <div key={label} className="grid gap-1 py-4 sm:grid-cols-[13rem_1fr]"><dt className="text-sm font-medium text-slate-400">{label}</dt><dd className="whitespace-pre-wrap break-all text-sm leading-6 text-slate-800">{value}</dd></div>)}</dl></section>)}
-          </div>
-          <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => setStep("input")} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 px-6 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-600"><ArrowLeft size={17} />入力内容を修正する</button><button type="button" onClick={() => { setStep("complete"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">この内容で見積を依頼する<Send size={17} /></button></div>
-        </div>
-      </section>
-    );
-  }
+  const editButton = <button type="button" onClick={edit} disabled={isSending} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 px-4 text-xs font-semibold text-slate-600 hover:border-blue-200 hover:text-blue-600 disabled:opacity-50"><Pencil size={14} />編集</button>;
+  if (step === "confirm") return <section className="border-t border-slate-100 bg-slate-50/70 py-16 sm:py-24"><div className="mx-auto max-w-5xl px-5 sm:px-8"><StepIndicator current="confirm" /><div className="mb-8"><p className="section-label !mb-2">Confirmation</p><h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">入力内容をご確認ください</h2><p className="mt-3 text-sm text-slate-500">この段階ではまだ送信されません。</p></div><div className="space-y-5"><Card title="お客様情報" icon={<UserRound size={20} />} action={editButton}><ReviewRows rows={[["氏名", customer.name], ["会社名", customer.company], ["メールアドレス", customer.email], ["電話番号", customer.phone]]} /></Card><Card title="商品情報" icon={<Package size={20} />} action={editButton}><ReviewRows rows={[["中国ECサイト", customer.marketplace]]} />{products.map((product, index) => <div key={product.id} className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/70 p-5"><h3 className="font-semibold">商品 {index + 1}</h3><ReviewRows rows={[["URL", product.url], ["画像", `${product.images.length}枚`], ["数量", product.quantity], ["色", product.color], ["サイズ", product.size], ["型番", product.model], ["希望内容", product.request]]} />{product.images.length > 0 && <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-8">{product.images.map((image, imageIndex) => <div key={image.id} className="relative aspect-square overflow-hidden rounded-lg"><Image src={image.preview} alt={`商品${index + 1} 画像${imageIndex + 1}`} fill unoptimized className="object-cover" /></div>)}</div>}</div>)}</Card><Card title="配送" icon={<Truck size={20} />} action={editButton}><ReviewRows rows={[["配送方法", customer.shipping], ["都道府県", customer.prefecture], ["希望納期", customer.deadline]]} /></Card><Card title="その他" icon={<ClipboardCheck size={20} />} action={editButton}><ReviewRows rows={[["出品者への確認事項", customer.sellerQuestion], ["備考", customer.notes]]} /></Card></div>{sendError && <p role="alert" className="mt-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700"><AlertCircle size={17} />{sendError}</p>}<div className="mt-8 grid gap-3 sm:flex sm:justify-end"><button type="button" onClick={edit} disabled={isSending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-slate-200 px-6 text-sm font-semibold text-slate-700 sm:w-auto"><ArrowLeft size={17} />入力内容を修正する</button><button type="button" onClick={submitEstimate} disabled={isSending} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-wait disabled:opacity-60 sm:w-auto">{isSending ? "送信中…" : "この内容で見積を依頼する"}<Send size={17} /></button></div></div></section>;
 
-  return (
-    <section className="border-t border-slate-100 bg-slate-50/70 py-20 sm:py-24">
-      <form onSubmit={showConfirmation} noValidate className="mx-auto max-w-5xl px-5 sm:px-8">
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-[0_24px_70px_-52px_rgba(15,23,42,.35)] sm:p-8">
-          <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-blue-600 text-white"><Package size={21} /></span><div><p className="section-label !mb-1">Customer Details</p><h2 className="text-2xl font-semibold tracking-tight">お客様情報</h2></div></div>
-          <div className="mt-8 grid gap-x-5 gap-y-6 sm:grid-cols-2">
-            <label className="text-sm font-medium text-slate-700">お名前<Required /><input value={customer.name} onChange={(e) => updateCustomer("name", e.target.value)} className={inputClass} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} autoComplete="name" /><ErrorText id="name-error" message={errors.name} /></label>
-            <label className="text-sm font-medium text-slate-700">メールアドレス<Required /><input type="email" value={customer.email} onChange={(e) => updateCustomer("email", e.target.value)} className={inputClass} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} autoComplete="email" placeholder="example@email.com" /><ErrorText id="email-error" message={errors.email} /></label>
-            <label className="text-sm font-medium text-slate-700">会社名<span className="ml-2 text-xs text-slate-400">任意</span><input value={customer.company} onChange={(e) => updateCustomer("company", e.target.value)} className={inputClass} autoComplete="organization" /></label>
-            <label className="text-sm font-medium text-slate-700">電話番号<span className="ml-2 text-xs text-slate-400">任意</span><input type="tel" value={customer.phone} onChange={(e) => updateCustomer("phone", e.target.value)} className={inputClass} autoComplete="tel" /></label>
-            <label className="text-sm font-medium text-slate-700">中国ECサイト名<span className="ml-2 text-xs text-slate-400">任意</span><select value={customer.marketplace} onChange={(e) => updateCustomer("marketplace", e.target.value)} className={inputClass}><option value="">選択してください</option>{["Taobao（淘宝）", "1688", "Xianyu（闲鱼・咸鱼）", "Tmall（天猫）", "Alibaba", "その他"].map(item => <option key={item}>{item}</option>)}</select></label>
-            <label className="text-sm font-medium text-slate-700">日本国内のお届け先都道府県<Required /><select value={customer.prefecture} onChange={(e) => updateCustomer("prefecture", e.target.value)} className={inputClass} aria-invalid={Boolean(errors.prefecture)} aria-describedby={errors.prefecture ? "prefecture-error" : undefined}><option value="">選択してください</option>{prefectures.map(item => <option key={item}>{item}</option>)}</select><ErrorText id="prefecture-error" message={errors.prefecture} /></label>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-5">
-          {products.map((product, index) => (
-            <fieldset key={product.id} className="rounded-[2rem] border border-slate-100 bg-white p-5 sm:p-8">
-              <div className="flex items-center justify-between gap-4"><legend className="text-xl font-semibold tracking-tight">商品 {index + 1}</legend><button type="button" disabled={products.length === 1} onClick={() => removeProduct(product.id)} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 px-4 text-xs font-semibold text-slate-500 transition enabled:hover:border-red-200 enabled:hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-35"><Trash2 size={15} />削除</button></div>
-              <div className="mt-7 grid gap-x-5 gap-y-6 sm:grid-cols-2">
-                <label className="text-sm font-medium text-slate-700 sm:col-span-2">商品URL<Required /><input type="url" value={product.url} onChange={(e) => updateProduct(product.id, "url", e.target.value)} className={inputClass} placeholder="https://..." aria-invalid={Boolean(errors[`product-${product.id}-url`])} aria-describedby={errors[`product-${product.id}-url`] ? `product-${product.id}-url-error` : undefined} /><ErrorText id={`product-${product.id}-url-error`} message={errors[`product-${product.id}-url`]} /></label>
-                <label className="text-sm font-medium text-slate-700">数量<Required /><input type="number" min="1" inputMode="numeric" value={product.quantity} onChange={(e) => updateProduct(product.id, "quantity", e.target.value)} className={inputClass} aria-invalid={Boolean(errors[`product-${product.id}-quantity`])} aria-describedby={errors[`product-${product.id}-quantity`] ? `product-${product.id}-quantity-error` : undefined} /><ErrorText id={`product-${product.id}-quantity-error`} message={errors[`product-${product.id}-quantity`]} /></label>
-                <label className="text-sm font-medium text-slate-700">色<span className="ml-2 text-xs text-slate-400">任意</span><input value={product.color} onChange={(e) => updateProduct(product.id, "color", e.target.value)} className={inputClass} /></label>
-                <label className="text-sm font-medium text-slate-700">サイズ<span className="ml-2 text-xs text-slate-400">任意</span><input value={product.size} onChange={(e) => updateProduct(product.id, "size", e.target.value)} className={inputClass} /></label>
-                <label className="text-sm font-medium text-slate-700">型番<span className="ml-2 text-xs text-slate-400">任意</span><input value={product.model} onChange={(e) => updateProduct(product.id, "model", e.target.value)} className={inputClass} /></label>
-                <label className="text-sm font-medium text-slate-700 sm:col-span-2">商品仕様または希望内容<Required /><textarea value={product.request} onChange={(e) => updateProduct(product.id, "request", e.target.value)} className={textareaClass} placeholder="希望する仕様、種類、商品の状態など" aria-invalid={Boolean(errors[`product-${product.id}-request`])} aria-describedby={errors[`product-${product.id}-request`] ? `product-${product.id}-request-error` : undefined} /><ErrorText id={`product-${product.id}-request-error`} message={errors[`product-${product.id}-request`]} /></label>
-              </div>
-            </fieldset>
-          ))}
-        </div>
-        <button type="button" onClick={addProduct} disabled={products.length >= 10} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50/50 text-sm font-semibold text-blue-700 transition enabled:hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"><CirclePlus size={18} />商品を追加（{products.length}/10）</button>
-
-        <div className="mt-6 rounded-[2rem] border border-slate-100 bg-white p-5 sm:p-8">
-          <h2 className="text-xl font-semibold tracking-tight">ご希望・補足情報</h2>
-          <div className="mt-7 grid gap-x-5 gap-y-6 sm:grid-cols-2">
-            <label className="text-sm font-medium text-slate-700 sm:col-span-2">出品者に確認したい内容<span className="ml-2 text-xs text-slate-400">任意</span><textarea value={customer.sellerQuestion} onChange={(e) => updateCustomer("sellerQuestion", e.target.value)} className={textareaClass} /></label>
-            <label className="text-sm font-medium text-slate-700">希望する配送方法<span className="ml-2 text-xs text-slate-400">任意</span><select value={customer.shipping} onChange={(e) => updateCustomer("shipping", e.target.value)} className={inputClass}>{["おまかせ", "速さを優先", "送料を優先", "未定"].map(item => <option key={item}>{item}</option>)}</select></label>
-            <label className="text-sm font-medium text-slate-700">希望納期<span className="ml-2 text-xs text-slate-400">任意</span><input value={customer.deadline} onChange={(e) => updateCustomer("deadline", e.target.value)} className={inputClass} placeholder="例：〇月頃まで" /></label>
-            <label className="text-sm font-medium text-slate-700 sm:col-span-2">備考<span className="ml-2 text-xs text-slate-400">任意</span><textarea value={customer.notes} onChange={(e) => updateCustomer("notes", e.target.value)} className={textareaClass} /></label>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-[2rem] border border-blue-100 bg-blue-50/60 p-5 sm:p-8">
-          <div className="flex items-start gap-3"><Info size={19} className="mt-0.5 shrink-0 text-blue-600" /><ul className="space-y-2 text-sm leading-6 text-slate-600"><li>商品によっては購入または発送できない場合があります。</li><li>真贋、返品、納期を保証するものではありません。</li><li>商品URLや仕様が不明な場合は、分かる範囲でご入力ください。</li><li>パスワード、クレジットカード情報、本人確認書類などは入力しないでください。</li></ul></div>
-          <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-white p-4 text-sm font-medium text-slate-700"><input type="checkbox" checked={customer.privacy} onChange={(e) => updateCustomer("privacy", e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-blue-600" aria-invalid={Boolean(errors.privacy)} aria-describedby={errors.privacy ? "privacy-error" : undefined} /><span><Link href="/privacy" className="text-blue-600 underline decoration-blue-200 underline-offset-4 hover:text-blue-800">プライバシーポリシー</Link>に同意します<Required /><ErrorText id="privacy-error" message={errors.privacy} /></span></label>
-        </div>
-
-        <button type="submit" className="mt-8 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white shadow-xl shadow-blue-600/20 transition hover:bg-blue-700">入力内容を確認する<ArrowRight size={18} /></button>
-      </form>
-    </section>
-  );
+  return <section className="border-t border-slate-100 bg-slate-50/70 py-16 sm:py-24"><form onSubmit={showConfirmation} noValidate className="mx-auto max-w-5xl px-5 sm:px-8"><StepIndicator current="input" /><div className="space-y-5"><Card title="お客様情報" icon={<UserRound size={20} />}><div className="mt-7 grid gap-x-5 gap-y-6 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700">氏名<Required /><input value={customer.name} onChange={(e) => updateCustomer("name", e.target.value)} className={fieldClass(errors.name)} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} autoComplete="name" /><ErrorText id="name-error" message={errors.name} /></label><label className="text-sm font-medium text-slate-700">会社名<input value={customer.company} onChange={(e) => updateCustomer("company", e.target.value)} className={fieldClass()} autoComplete="organization" /></label><label className="text-sm font-medium text-slate-700">メールアドレス<Required /><input type="email" value={customer.email} onChange={(e) => updateCustomer("email", e.target.value)} className={fieldClass(errors.email)} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} autoComplete="email" placeholder="example@email.com" /><ErrorText id="email-error" message={errors.email} /></label><label className="text-sm font-medium text-slate-700">電話番号<input type="tel" value={customer.phone} onChange={(e) => updateCustomer("phone", e.target.value)} className={fieldClass()} autoComplete="tel" /></label></div></Card>
+  <Card title="商品情報" icon={<Package size={20} />}><label className="mt-7 block text-sm font-medium text-slate-700">中国ECサイト<select value={customer.marketplace} onChange={(e) => updateCustomer("marketplace", e.target.value)} className={fieldClass()}><option value="">選択してください</option>{marketplaces.map((item) => <option key={item}>{item}</option>)}</select></label><div className="mt-6 space-y-5">{products.map((product, index) => <fieldset key={product.id} className="relative rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-6"><legend className="px-2 text-lg font-semibold">商品 {index + 1}</legend><button type="button" disabled={products.length === 1} onClick={() => removeProduct(product.id)} className="absolute right-4 top-4 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-500 enabled:hover:border-red-200 enabled:hover:text-red-600 disabled:opacity-30"><Trash2 size={14} />削除</button><div className="mt-4 grid gap-x-5 gap-y-6 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700 sm:col-span-2">商品URL <span className="text-xs font-normal text-slate-400">（任意）</span><input type="url" value={product.url} onChange={(e) => updateProduct(product.id, "url", e.target.value)} className={fieldClass(errors[`product-${product.id}-url`])} placeholder="https://item.taobao.com/..." aria-invalid={Boolean(errors[`product-${product.id}-url`])} aria-describedby={errors[`product-${product.id}-url`] ? `product-${product.id}-url-error` : undefined} /><ErrorText id={`product-${product.id}-url-error`} message={errors[`product-${product.id}-url`]} /></label><ProductImages product={product} error={errors[`product-${product.id}-images`]} onAdd={(files) => addImages(product.id, files)} onRemove={(imageId) => removeImage(product.id, imageId)} /><label className="text-sm font-medium text-slate-700">数量<Required /><input type="number" min="1" inputMode="numeric" value={product.quantity} onChange={(e) => updateProduct(product.id, "quantity", e.target.value)} className={fieldClass(errors[`product-${product.id}-quantity`])} placeholder="例：2" aria-invalid={Boolean(errors[`product-${product.id}-quantity`])} aria-describedby={errors[`product-${product.id}-quantity`] ? `product-${product.id}-quantity-error` : undefined} /><ErrorText id={`product-${product.id}-quantity-error`} message={errors[`product-${product.id}-quantity`]} /></label><label className="text-sm font-medium text-slate-700">色<input value={product.color} onChange={(e) => updateProduct(product.id, "color", e.target.value)} className={fieldClass()} /></label><label className="text-sm font-medium text-slate-700">サイズ<input value={product.size} onChange={(e) => updateProduct(product.id, "size", e.target.value)} className={fieldClass()} /></label><label className="text-sm font-medium text-slate-700">型番<input value={product.model} onChange={(e) => updateProduct(product.id, "model", e.target.value)} className={fieldClass()} /></label><label className="text-sm font-medium text-slate-700 sm:col-span-2">希望内容 <span className="text-xs font-normal text-slate-400">（任意）</span><textarea value={product.request} onChange={(e) => updateProduct(product.id, "request", e.target.value)} className={fieldClass(undefined, true)} placeholder={"例：\n・青色\n・Mサイズ\n・2個希望"} /></label></div></fieldset>)}</div><button type="button" onClick={addProduct} disabled={products.length >= 10} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"><CirclePlus size={18} />商品を追加（{products.length}/10）</button></Card>
+  <Card title="配送" icon={<Truck size={20} />}><div className="mt-7 grid gap-x-5 gap-y-6 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700">配送方法<select value={customer.shipping} onChange={(e) => updateCustomer("shipping", e.target.value)} className={fieldClass()}>{["おまかせ", "速さを優先", "送料を優先", "未定"].map((item) => <option key={item}>{item}</option>)}</select></label><label className="text-sm font-medium text-slate-700">都道府県<Required /><select value={customer.prefecture} onChange={(e) => updateCustomer("prefecture", e.target.value)} className={fieldClass(errors.prefecture)} aria-invalid={Boolean(errors.prefecture)} aria-describedby={errors.prefecture ? "prefecture-error" : undefined}><option value="">選択してください</option>{prefectures.map((item) => <option key={item}>{item}</option>)}</select><ErrorText id="prefecture-error" message={errors.prefecture} /></label><label className="text-sm font-medium text-slate-700 sm:col-span-2">希望納期<input value={customer.deadline} onChange={(e) => updateCustomer("deadline", e.target.value)} className={fieldClass()} placeholder="例：〇月頃まで" /></label></div></Card>
+  <Card title="その他" icon={<ClipboardCheck size={20} />}><div className="mt-7 grid gap-6"><label className="text-sm font-medium text-slate-700">出品者への確認事項<textarea value={customer.sellerQuestion} onChange={(e) => updateCustomer("sellerQuestion", e.target.value)} className={fieldClass(undefined, true)} /></label><label className="text-sm font-medium text-slate-700">備考<textarea value={customer.notes} onChange={(e) => updateCustomer("notes", e.target.value)} className={fieldClass(undefined, true)} /></label></div></Card></div>
+  <div className="mt-6 rounded-[1.5rem] border border-amber-200 bg-amber-50/70 p-5 sm:p-7"><div className="flex items-start gap-3"><Info size={20} className="mt-0.5 shrink-0 text-amber-600" /><div><h2 className="font-semibold text-slate-900">お申し込み前にご確認ください</h2><ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600"><li>・見積だけでは注文は成立しません</li><li>・商品によっては購入できない場合があります</li><li>・送料・関税は商品によって異なります</li><li>・真贋・納期・返品は保証していません</li></ul></div></div><label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-white p-4 text-sm font-medium text-slate-700"><input type="checkbox" checked={customer.privacy} onChange={(e) => updateCustomer("privacy", e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-blue-600" aria-invalid={Boolean(errors.privacy)} aria-describedby={errors.privacy ? "privacy-error" : undefined} /><span><Link href="/privacy" className="text-blue-600 underline decoration-blue-200 underline-offset-4 hover:text-blue-800">プライバシーポリシー</Link>に同意します<Required /><ErrorText id="privacy-error" message={errors.privacy} /></span></label></div><button type="submit" className="mt-8 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-7 text-sm font-semibold text-white shadow-xl shadow-blue-600/20 hover:bg-blue-700">入力内容を確認する<ArrowRight size={18} /></button></form></section>;
 }

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { withBasePath } from "@/config/site";
 
 export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: boolean }) {
   return (
@@ -13,14 +14,14 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
         </div>
       )}
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-        <Link href="/" className="flex items-center" aria-label="SK EC Pro ホーム">
+        <Link href="/" className="relative h-[3.75rem] w-40 overflow-hidden" aria-label="SK EC Pro ホーム">
           <Image
-            src="/brand/sk-ec-pro-logo.png"
+            src={withBasePath("/brand/sk-ec-pro-logo.png")}
             alt="SK EC Pro"
-            width={998}
-            height={629}
+            fill
+            sizes="160px"
             priority
-            className="h-14 w-auto"
+            className="object-cover"
           />
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 lg:flex" aria-label="メインナビゲーション">
@@ -28,13 +29,12 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
           <Link className="transition hover:text-blue-600" href="/pricing">料金</Link>
           <Link className="transition hover:text-blue-600" href="/#shops">当社運営ショップ</Link>
           <Link className="transition hover:text-blue-600" href="/#why">選ばれる理由</Link>
+          <Link className="transition hover:text-blue-600" href="/account">マイページ</Link>
           <Link className="rounded-full bg-slate-950 px-5 py-2.5 text-white transition hover:bg-blue-600" href="/estimate">
             無料見積
           </Link>
         </nav>
-        <Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white lg:hidden" href="/estimate">
-          無料見積
-        </Link>
+        <div className="flex items-center gap-2 lg:hidden"><Link className="px-2 py-2 text-xs font-semibold text-slate-600" href="/account">マイページ</Link><Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="/estimate">無料見積</Link></div>
       </div>
     </header>
   );
@@ -44,14 +44,16 @@ export function SiteFooter() {
   return (
     <footer className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-5 py-10 text-sm text-slate-500 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
       <Link href="/" className="flex items-center gap-3 text-slate-950">
-        <Image
-          src="/brand/sk-ec-pro-logo.png"
-          alt="SK EC Pro"
-          width={998}
-          height={629}
-          className="h-16 w-auto"
-        />
-        <span className="max-w-48 text-[11px] leading-relaxed text-slate-400">フォルモサインターナショナルジャパン株式会社</span>
+        <span className="relative block h-16 w-44 overflow-hidden">
+          <Image
+            src={withBasePath("/brand/sk-ec-pro-logo.png")}
+            alt="SK EC Pro"
+            fill
+            sizes="176px"
+            className="object-cover"
+          />
+        </span>
+        <span className="max-w-48 text-[11px] leading-relaxed text-slate-400">Formosa Japan</span>
       </Link>
       <div className="flex flex-wrap gap-6">
         <Link href="/purchase-agent" className="hover:text-blue-600">中国EC購入代行</Link>
@@ -59,6 +61,7 @@ export function SiteFooter() {
         <Link href="/#shops" className="hover:text-blue-600">当社運営ショップ</Link>
         <Link href="/#why" className="hover:text-blue-600">選ばれる理由</Link>
         <Link href="/contact" className="hover:text-blue-600">お問い合わせ</Link>
+        <Link href="/account" className="hover:text-blue-600">マイページ</Link>
       </div>
       <div className="flex flex-wrap gap-4 text-xs">
         <Link href="/about" className="hover:text-blue-600">会社概要</Link>
