@@ -12,7 +12,7 @@ export type ApproveEstimateState = {
   success: boolean;
   message: string;
 };
-const CUSTOMER_APPROVAL_STATUSES = ["見積作成完了", "お客様確認中"];
+const CUSTOMER_APPROVAL_STATUSES = ["お客様確認中"];
 
 export async function approveEstimate(
   _previousState: ApproveEstimateState,

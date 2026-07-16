@@ -18,7 +18,7 @@ create table if not exists public.estimates (
   id uuid primary key default gen_random_uuid(),
   estimate_no text not null unique,
   customer_id uuid not null references public.customers(id) on delete restrict,
-  status text not null default '新規' check (status in ('新規', '見積作成中', '見積作成完了', 'お客様確認中', 'approved', 'paid', '発注済', '中国発送', '国際配送中', '国内発送', '完了', 'キャンセル')),
+  status text not null default '新規' check (status in ('新規', '見積作成中', 'お客様確認中', 'approved', 'paid', '発注済', '中国発送', '国際配送中', '国内発送', '完了', 'キャンセル')),
   approved_at timestamptz,
   paid_at timestamptz,
   memo text,
@@ -70,7 +70,7 @@ end
 where status in ('未対応', '対応中', '見積送付済', '注文確定', '購入済', '中国倉庫', '国際発送済');
 alter table public.estimates
   add constraint estimates_status_check
-  check (status in ('新規', '見積作成中', '見積作成完了', 'お客様確認中', 'approved', 'paid', '発注済', '中国発送', '国際配送中', '国内発送', '完了', 'キャンセル'));
+  check (status in ('新規', '見積作成中', 'お客様確認中', 'approved', 'paid', '発注済', '中国発送', '国際配送中', '国内発送', '完了', 'キャンセル'));
 
 create table if not exists public.estimate_items (
   id uuid primary key default gen_random_uuid(),

@@ -1,7 +1,7 @@
 import { Check, Circle, Clock3 } from "lucide-react";
 
 const steps = [
-  { label: "受付", statuses: ["新規"] }, { label: "見積作成", statuses: ["見積作成中", "見積作成完了"] },
+  { label: "受付", statuses: ["新規"] }, { label: "見積作成", statuses: ["見積作成中"] },
   { label: "お客様確認", statuses: ["お客様確認中"] }, { label: "承認", statuses: ["approved"] }, { label: "決済", statuses: ["paid", "発注済"] },
   { label: "中国発送", statuses: ["中国発送"] }, { label: "国際配送", statuses: ["国際配送中"] },
   { label: "国内発送", statuses: ["国内発送"] }, { label: "完了", statuses: ["完了"] },

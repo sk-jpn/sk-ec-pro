@@ -109,7 +109,7 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
               </div>
 
               <div className="mt-10 border-t border-slate-100 pt-8">
-                <PaymentPanel estimateNumber={estimate.estimate_no} estimateTotal={totals.total} initialPaymentMethod={estimate.payment_method} approved={Boolean(estimate.approved_at)} paid={estimate.status === "paid" || Boolean(estimate.paid_at)} cancelled={estimate.status === "キャンセル"} approvalAllowed={["見積作成完了", "お客様確認中"].includes(estimate.status)} />
+                <PaymentPanel estimateNumber={estimate.estimate_no} estimateTotal={totals.total} initialPaymentMethod={estimate.payment_method} approved={Boolean(estimate.approved_at)} paid={estimate.status === "paid" || Boolean(estimate.paid_at)} cancelled={estimate.status === "キャンセル"} approvalAllowed={estimate.status === "お客様確認中"} />
               </div>
             </div>
           </div>

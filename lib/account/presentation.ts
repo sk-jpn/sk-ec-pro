@@ -19,5 +19,5 @@ export function estimateTotal(estimate: {
 }
 
 export function customerStatusLabel(status: string) {
-  return ({ 新規: "受付", 見積作成中: "見積作成中", 見積作成完了: "見積作成完了", お客様確認中: "お客様確認中", approved: "承認済", paid: "決済済", 発注済: "発注済", 中国発送: "中国発送", 国際配送中: "国際配送中", 国内発送: "国内発送", 完了: "完了", キャンセル: "キャンセル" } as Record<string, string>)[status] ?? status;
+  return ({ 新規: "受付", 見積作成中: "見積作成中", お客様確認中: "お客様確認中", approved: "承認済", paid: "決済済", 発注済: "発注済", 中国発送: "中国発送", 国際配送中: "国際配送中", 国内発送: "国内発送", 完了: "完了", キャンセル: "キャンセル" } as Record<string, string>)[status] ?? status;
 }
