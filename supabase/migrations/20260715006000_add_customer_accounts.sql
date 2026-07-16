@@ -151,6 +151,13 @@ alter table public.estimate_items enable row level security;
 drop policy if exists "temporary admin read customers" on public.customers;
 drop policy if exists "temporary admin read estimates" on public.estimates;
 drop policy if exists "temporary admin read estimate items" on public.estimate_items;
+drop policy if exists "customers_select_own" on public.customers;
+drop policy if exists "estimates_select_own" on public.estimates;
+drop policy if exists "estimate_items_select_own" on public.estimate_items;
+drop policy if exists "orders_select_own" on public.orders;
+drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists "profiles_insert_own" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
 
 create policy "customers_select_own" on public.customers for select to authenticated
   using ((select auth.uid()) is not null and auth_user_id = (select auth.uid()));
@@ -175,3 +182,6 @@ revoke select on public.customers, public.estimates, public.estimate_items from 
 grant select on public.customers, public.estimates, public.estimate_items, public.orders to authenticated;
 grant select, insert, update on public.profiles to authenticated;
 grant all on public.profiles, public.orders to service_role;
+
+revoke all on function public.handle_new_auth_user() from public;
+revoke all on function public.sync_order_from_estimate() from public;

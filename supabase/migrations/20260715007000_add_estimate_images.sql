@@ -16,6 +16,7 @@ create table if not exists public.estimate_item_images (
 create index if not exists estimate_item_images_item_id_idx on public.estimate_item_images(estimate_item_id);
 alter table public.estimate_item_images enable row level security;
 
+drop policy if exists "estimate_item_images_select_own" on public.estimate_item_images;
 create policy "estimate_item_images_select_own" on public.estimate_item_images for select to authenticated
   using (estimate_item_id in (
     select i.id from public.estimate_items i
@@ -61,3 +62,6 @@ begin
   return query select v_estimate_id, v_estimate_no;
 end;
 $$;
+
+revoke all on function public.create_estimate(text, text, text, text, text, text, text, jsonb) from public;
+grant execute on function public.create_estimate(text, text, text, text, text, text, text, jsonb) to anon, authenticated;

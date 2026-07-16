@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { withBasePath } from "@/config/site";
 import { isAdminUser } from "@/lib/auth/authorization";
 
 export async function updateSupabaseSession(request: NextRequest) {
@@ -8,7 +9,7 @@ export async function updateSupabaseSession(request: NextRequest) {
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !publishableKey) {
-    return NextResponse.redirect(new URL("/login?error=configuration", request.url));
+    return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=configuration`, request.url));
   }
 
   const supabase = createServerClient(url, publishableKey, {
@@ -26,7 +27,7 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !isAdminUser(user)) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = new URL(withBasePath("/login"), request.url);
     if (user) loginUrl.searchParams.set("error", "unauthorized");
     return NextResponse.redirect(loginUrl);
   }

@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --font-sans: var(--font-site-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +17,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  font-family: var(--font-site-sans), "Hiragino Sans", "Yu Gothic UI", sans-serif;
 }
 ::selection { background: #dbeafe; color: #1d4ed8; }
 

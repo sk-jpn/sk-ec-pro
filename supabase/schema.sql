@@ -1,5 +1,5 @@
--- SK EC Pro 見積管理スキーマ
--- Supabase SQL Editorで実行してください。
+-- SK EC Pro schema snapshot (reference only).
+-- Production changes must be applied from supabase/migrations with `supabase db push`.
 
 create extension if not exists pgcrypto;
 
@@ -91,6 +91,7 @@ create table if not exists public.estimate_item_images (
   id uuid primary key default gen_random_uuid(),
   estimate_item_id uuid not null references public.estimate_items(id) on delete cascade,
   storage_path text not null unique,
+  image_url text,
   original_name text not null,
   mime_type text not null check (mime_type in ('image/jpeg', 'image/png', 'image/webp')),
   sort_order integer not null check (sort_order between 1 and 10),
