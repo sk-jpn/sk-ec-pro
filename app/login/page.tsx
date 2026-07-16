@@ -17,9 +17,10 @@ const messages: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
+  const next = params.next === "/estimate" ? "/estimate" : "/account";
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/account");
+  if (user) redirect(next);
 
   const message = typeof params.error === "string" ? messages[params.error] : null;
   const accountDeleted = params.account === "deleted";
@@ -35,7 +36,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <CardContent className="p-6 sm:p-8">
           {message && <p role="alert" className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{message}</p>}
           {accountDeleted && <p role="status" className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">アカウントと関連データを削除しました。</p>}
-          <GoogleLoginButton next="/account" />
+          <GoogleLoginButton next={next} />
           <div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs font-medium text-slate-500"><span className="rounded-lg bg-slate-50 px-2 py-3">見積履歴</span><span className="rounded-lg bg-slate-50 px-2 py-3">注文状況</span><span className="rounded-lg bg-slate-50 px-2 py-3">発送状況</span></div>
           <p className="mt-5 text-center text-xs leading-5 text-slate-400">マイページです。ログイン状態は安全なCookieに保存されます。</p>
         </CardContent>

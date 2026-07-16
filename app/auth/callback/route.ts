@@ -7,7 +7,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") === "/account" ? "/account" : "/admin";
+  const requestedNext = requestUrl.searchParams.get("next");
+  const next = requestedNext === "/account" || requestedNext === "/estimate" ? requestedNext : "/admin";
   const loginPath = next === "/admin" ? "/admin/login" : "/login";
   const destinationPath = withBasePath(next);
   const destination = new URL(destinationPath, requestUrl.origin);
@@ -31,13 +32,21 @@ export async function GET(request: Request) {
   if (next === "/account") {
     const normalizedEmail = user.email?.trim().toLowerCase();
     const admin = createSupabaseAdminClient();
-    const { data: candidates, error: customerError } = normalizedEmail
+    const { data: linkedCustomer, error: linkedError } = await admin
+      .from("customers")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    const { data: candidates, error: emailError } = !linkedCustomer && normalizedEmail
       ? await admin.from("customers").select("email, auth_user_id").ilike("email", normalizedEmail).limit(100)
       : { data: null, error: null };
-    const hasCustomerAccount = !customerError && (candidates ?? []).some((customer) =>
+    const hasLegacyEmailMatch = (candidates ?? []).some((customer) =>
       customer.email.trim().toLowerCase() === normalizedEmail &&
       (customer.auth_user_id === null || customer.auth_user_id === user.id)
     );
+    const customerError = linkedError ?? emailError;
+    const hasCustomerAccount = !customerError && (Boolean(linkedCustomer) || hasLegacyEmailMatch);
 
     if (!hasCustomerAccount) {
       if (customerError) console.error("Googleログイン対象の顧客確認に失敗しました。", customerError);

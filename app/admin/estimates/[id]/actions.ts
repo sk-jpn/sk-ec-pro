@@ -8,6 +8,7 @@ import { getEstimateQuoteData } from "@/lib/estimates/quote-data";
 import { generateEstimatePdf } from "@/lib/pdf/estimate-pdf";
 import { PAYMENT_METHODS } from "@/config/payment";
 import { requireAdminUser } from "@/lib/auth/require-admin";
+import { ESTIMATE_IMAGE_BUCKET, validateEstimateImage } from "@/lib/estimates/image-files";
 import { isEstimateStatus } from "../statuses";
 
 export type UpdateEstimateState = {
@@ -18,6 +19,97 @@ export type UpdateEstimateState = {
 export type UpdateQuoteState = UpdateEstimateState;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function textField(formData: FormData, name: string, max: number) {
+  const value = formData.get(name);
+  return typeof value === "string" && value.length <= max ? value.trim() : null;
+}
+
+export async function updateEstimateItem(_state: UpdateEstimateState, formData: FormData): Promise<UpdateEstimateState> {
+  await requireAdminUser();
+  const itemId = formData.get("itemId");
+  const estimateId = formData.get("estimateId");
+  if (typeof itemId !== "string" || !UUID_PATTERN.test(itemId) || typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId)) return { success: false, message: "商品IDが正しくありません。" };
+  const url = textField(formData, "url", 2_000);
+  const productName = textField(formData, "productName", 300);
+  const color = textField(formData, "color", 200);
+  const size = textField(formData, "size", 200);
+  const model = textField(formData, "model", 200);
+  const request = textField(formData, "request", 2_000);
+  if ([url, productName, color, size, model, request].some((value) => value === null)) return { success: false, message: "商品情報の文字数を確認してください。" };
+  if (url) {
+    try { const parsed = new URL(url); if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(); } catch { return { success: false, message: "商品URLを確認してください。" }; }
+  }
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("estimate_items").update({ url, product_name: productName || null, color: color || null, size: size || null, model: model || null, request }).eq("id", itemId).eq("estimate_id", estimateId).select("id").maybeSingle();
+  if (error || !data) return { success: false, message: "商品情報を保存できませんでした。" };
+  revalidatePath(`/admin/estimates/${estimateId}`);
+  revalidatePath("/account/estimates/[id]", "page");
+  return { success: true, message: "商品情報を保存しました。" };
+}
+
+export async function uploadEstimateItemImages(_state: UpdateEstimateState, formData: FormData): Promise<UpdateEstimateState> {
+  await requireAdminUser();
+  const itemId = formData.get("itemId");
+  const estimateId = formData.get("estimateId");
+  const imageType = formData.get("imageType");
+  const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  if (typeof itemId !== "string" || !UUID_PATTERN.test(itemId) || typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId) || (imageType !== "estimate" && imageType !== "received")) return { success: false, message: "画像の送信内容が正しくありません。" };
+  if (!files.length) return { success: false, message: "画像を選択してください。" };
+  if (files.length > 2) return { success: false, message: "画像は1回につき2枚まで選択してください。" };
+  const table = imageType === "received" ? "received_item_images" : "estimate_item_images";
+  const limit = imageType === "received" ? 2 : 10;
+  const supabase = createSupabaseAdminClient();
+  const { data: item, error: itemError } = await supabase.from("estimate_items").select("id, estimates!inner(estimate_no)").eq("id", itemId).eq("estimate_id", estimateId).maybeSingle();
+  if (itemError || !item) return { success: false, message: "商品情報を確認できませんでした。" };
+  const { data: current, error: countError } = await supabase.from(table).select("id, sort_order").eq("estimate_item_id", itemId).order("sort_order");
+  if (countError) return { success: false, message: "登録済み画像を確認できませんでした。" };
+  if ((current?.length ?? 0) + files.length > limit) return { success: false, message: `${imageType === "received" ? "到着商品画像" : "見積商品画像"}は最大${limit}枚です。` };
+  const used = new Set((current ?? []).map((image) => image.sort_order));
+  const estimateRelation = item.estimates as unknown as { estimate_no: string };
+  const uploaded: string[] = [];
+  try {
+    for (const file of files) {
+      const validated = await validateEstimateImage(file);
+      let sortOrder = 1;
+      while (used.has(sortOrder)) sortOrder += 1;
+      used.add(sortOrder);
+      const folder = imageType === "received" ? "received" : "admin-estimate";
+      const path = `${estimateRelation.estimate_no}/${folder}/${itemId}/${crypto.randomUUID()}.${validated.extension}`;
+      const { error: uploadError } = await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).upload(path, validated.buffer, { contentType: validated.mimeType, upsert: false });
+      if (uploadError) throw uploadError;
+      uploaded.push(path);
+      const { error: insertError } = await supabase.from(table).insert({ estimate_item_id: itemId, storage_path: path, original_name: file.name.slice(0, 255) || "image", mime_type: validated.mimeType, sort_order: sortOrder });
+      if (insertError) throw insertError;
+    }
+  } catch (error) {
+    if (uploaded.length) {
+      await supabase.from(table).delete().in("storage_path", uploaded);
+      await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).remove(uploaded);
+    }
+    console.error("管理画面の商品画像アップロードに失敗しました。", error);
+    return { success: false, message: error instanceof Error ? error.message : "画像をアップロードできませんでした。" };
+  }
+  revalidatePath(`/admin/estimates/${estimateId}`);
+  revalidatePath("/account/estimates/[id]", "page");
+  return { success: true, message: "画像を追加しました。" };
+}
+
+export async function deleteEstimateItemImage(formData: FormData) {
+  await requireAdminUser();
+  const imageId = formData.get("imageId");
+  const estimateId = formData.get("estimateId");
+  const imageType = formData.get("imageType");
+  if (typeof imageId !== "string" || !UUID_PATTERN.test(imageId) || typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId) || (imageType !== "estimate" && imageType !== "received")) return;
+  const table = imageType === "received" ? "received_item_images" : "estimate_item_images";
+  const supabase = createSupabaseAdminClient();
+  const { data } = await supabase.from(table).select("storage_path, estimate_items!inner(estimate_id)").eq("id", imageId).eq("estimate_items.estimate_id", estimateId).maybeSingle();
+  if (!data) return;
+  const { error } = await supabase.from(table).delete().eq("id", imageId);
+  if (!error) await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).remove([data.storage_path]);
+  revalidatePath(`/admin/estimates/${estimateId}`);
+  revalidatePath("/account/estimates/[id]", "page");
+}
 
 function money(value: FormDataEntryValue | null) {
   if (typeof value !== "string" || !/^\d{1,10}$/.test(value)) return null;

@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ESTIMATE_IMAGE_BUCKET, MAX_IMAGES_PER_PRODUCT, validateEstimateImage } from "@/lib/estimates/image-files";
 
@@ -183,8 +183,11 @@ export async function POST(request: Request) {
 
   let savedEstimateNo: string;
   let savedEstimateId: string;
+  let authenticatedUserId: string | null = null;
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    authenticatedUserId = user?.id ?? null;
     const { data: saved, error } = await supabase.rpc("create_estimate", {
       p_name: data.customer.name,
       p_company: data.customer.company,
@@ -209,6 +212,18 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Supabaseへの見積保存に失敗しました。", error);
     return Response.json({ message: "見積内容を保存できませんでした。時間をおいて再度お試しください。" }, { status: 502 });
+  }
+
+  if (authenticatedUserId) {
+    const admin = createSupabaseAdminClient();
+    const { data: estimateOwner, error: ownerError } = await admin.from("estimates").select("customer_id").eq("id", savedEstimateId).single();
+    const { error: linkError } = estimateOwner
+      ? await admin.from("customers").update({ auth_user_id: authenticatedUserId }).eq("id", estimateOwner.customer_id)
+      : { error: ownerError ?? new Error("顧客情報が見つかりません。") };
+    if (ownerError || linkError) {
+      console.error("Googleログインユーザーへの見積紐付けに失敗しました。", ownerError ?? linkError);
+      return Response.json({ message: "マイページへの見積紐付けに失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
+    }
   }
 
   const uploadedPaths: string[] = [];

@@ -25,7 +25,9 @@ async function deleteCustomerDataFallback(userId: string) {
     if (itemIds.length) {
       const { data: images, error: imageError } = await admin.from("estimate_item_images").select("storage_path").in("estimate_item_id", itemIds);
       if (imageError) throw imageError;
-      storagePaths = (images ?? []).map((image) => image.storage_path);
+      const { data: receivedImages, error: receivedImageError } = await admin.from("received_item_images").select("storage_path").in("estimate_item_id", itemIds);
+      if (receivedImageError && receivedImageError.code !== "42P01") throw receivedImageError;
+      storagePaths = [...(images ?? []), ...(receivedImages ?? [])].map((image) => image.storage_path);
     }
   }
 

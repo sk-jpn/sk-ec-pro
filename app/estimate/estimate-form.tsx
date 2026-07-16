@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, CirclePlus, ClipboardCheck, ImagePlus, Info, Package, Pencil, Send, Trash2, Truck, UserRound, X } from "lucide-react";
 import { withBasePath } from "@/config/site";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type ProductImage = { id: string; file: File; preview: string };
 type Product = { id: number; url: string; images: ProductImage[]; quantity: string; color: string; size: string; model: string; request: string };
@@ -25,12 +26,20 @@ function ErrorText({ message, id }: { message?: string; id: string }) { return m
 
 function StepIndicator({ current }: { current: Step }) {
   const active = current === "input" ? 0 : current === "confirm" ? 1 : 2;
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => {
+    if (current !== "input") return;
+    createSupabaseBrowserClient().auth.getUser().then(({ data }) => setLoggedIn(Boolean(data.user)));
+  }, [current]);
+  const requestMyPage = () => {
+    if (!loggedIn) window.location.assign(withBasePath("/login?next=/estimate"));
+  };
   return <><ol className="mx-auto mb-10 flex max-w-3xl items-center" aria-label="見積依頼の進行状況">
     {["入力", "確認", "送信完了"].map((label, index) => <li key={label} className={`flex items-center ${index < 2 ? "flex-1" : ""}`} aria-current={active === index ? "step" : undefined}>
       <div className="flex min-w-16 flex-col items-center gap-2 text-center"><span className={`grid size-9 place-items-center rounded-full text-sm font-bold ${index <= active ? "bg-blue-600 text-white" : "border border-slate-200 bg-white text-slate-400"}`}>{index < active ? <CheckCircle2 size={18} /> : index + 1}</span><span className={`text-[10px] font-bold tracking-wider sm:text-xs ${active === index ? "text-blue-700" : "text-slate-400"}`}>STEP {index + 1}<span className="mt-0.5 block text-xs tracking-normal sm:text-sm">{label}</span></span></div>
       {index < 2 && <span className={`mx-2 h-px flex-1 sm:mx-5 ${index < active ? "bg-blue-500" : "bg-slate-200"}`} />}
     </li>)}
-  </ol>{current === "input" && <div className="mx-auto mb-6 grid max-w-3xl gap-3"><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-slate-800"><input id="create-account" type="checkbox" defaultChecked className="mt-0.5 size-5 shrink-0 accent-blue-600" /><span>マイページを利用する（推奨）<span className="mt-2 block text-xs font-normal leading-6 text-slate-600">Googleログインを利用すると、見積履歴・注文状況・発送状況をマイページから確認できます。Googleアカウントを利用しない場合も、見積依頼とメールでのご案内は可能です。</span></span></label></div>}</>;
+  </ol>{current === "input" && <div className="mx-auto mb-6 grid max-w-3xl gap-3"><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-slate-800"><input id="create-account" type="checkbox" checked={loggedIn} onChange={requestMyPage} className="mt-0.5 size-5 shrink-0 accent-blue-600" /><span>{loggedIn ? "Googleログイン済み（マイページを利用）" : "マイページを利用する（推奨）"}<span className="mt-2 block text-xs font-normal leading-6 text-slate-600">{loggedIn ? "この見積はGoogleログイン情報に紐付けられます。入力するメールアドレスは返信先としてのみ使用します。" : "マイページを利用する場合はGoogleログインが必要です。入力するメールアドレスは返信先であり、ログイン認証には使用しません。"}</span></span></label></div>}</>;
 }
 
 function Card({ title, icon, children, action }: { title: string; icon: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {

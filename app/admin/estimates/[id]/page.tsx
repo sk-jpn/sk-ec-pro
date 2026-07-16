@@ -13,6 +13,7 @@ import { BankPaymentButton } from "./bank-payment-button";
 import { PAYMENT_METHODS } from "@/config/payment";
 import { ESTIMATE_IMAGE_BUCKET } from "@/lib/estimates/image-files";
 import { EstimateImageGallery, type EstimateImageView } from "./estimate-image-gallery";
+import { EstimateItemEditor } from "./estimate-item-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ type EstimateDetail = {
   created_at: string;
   updated_at: string;
   customers: { name: string; company: string | null; email: string; phone: string | null; prefecture: string } | null;
-  estimate_items: { id: string; url: string; product_name: string | null; quantity: number; unit_price: number; color: string | null; size: string | null; model: string | null; request: string; estimate_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[] }[];
+  estimate_items: { id: string; url: string; product_name: string | null; quantity: number; unit_price: number; color: string | null; size: string | null; model: string | null; request: string; estimate_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[]; received_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[] }[];
 };
 
 export default async function EstimateDetailPage({ params }: PageProps<"/admin/estimates/[id]">) {
@@ -46,7 +47,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, shipping_method, remarks, created_at, updated_at, customers(name, company, email, phone, prefecture), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order))")
+    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, shipping_method, remarks, created_at, updated_at, customers(name, company, email, phone, prefecture), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
     .eq("id", id)
     .maybeSingle();
 
@@ -54,7 +55,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   if (!data) notFound();
   const estimate = data as unknown as EstimateDetail;
   const customer = estimate.customers;
-  const paths = estimate.estimate_items.flatMap((item) => item.estimate_item_images.map((image) => image.storage_path));
+  const paths = estimate.estimate_items.flatMap((item) => [...item.estimate_item_images, ...item.received_item_images].map((image) => image.storage_path));
   const { data: signedImages, error: signedImageError } = paths.length ? await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).createSignedUrls(paths, 60 * 60) : { data: [], error: null };
   if (signedImageError) console.error("見積画像の署名URLを作成できませんでした。", signedImageError);
   const signedUrlByPath = new Map((signedImages ?? []).map((entry, index) => [paths[index], entry.signedUrl]));
@@ -92,6 +93,18 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
             <p className="flex items-center gap-3"><Mail size={17} className="text-emerald-600" />{customer?.email ?? "—"}</p>
             <p className="flex items-center gap-3"><Phone size={17} className="text-emerald-600" />{customer?.phone ?? "—"}</p>
             <p className="flex items-center gap-3"><MapPin size={17} className="text-emerald-600" />{customer?.prefecture ?? "—"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>商品編集・中国物流到着画像</CardTitle></CardHeader>
+          <CardContent className="space-y-5">
+            {estimate.estimate_items.map((item) => {
+              const toView = (image: { id: string; storage_path: string; original_name: string }) => {
+                const url = signedUrlByPath.get(image.storage_path);
+                return url ? { id: image.id, url, originalName: image.original_name } : null;
+              };
+              return <EstimateItemEditor key={item.id} estimateId={estimate.id} item={{ id: item.id, url: item.url, productName: item.product_name ?? "", color: item.color ?? "", size: item.size ?? "", model: item.model ?? "", request: item.request }} estimateImages={item.estimate_item_images.sort((a, b) => a.sort_order - b.sort_order).flatMap((image) => { const view = toView(image); return view ? [view] : []; })} receivedImages={item.received_item_images.sort((a, b) => a.sort_order - b.sort_order).flatMap((image) => { const view = toView(image); return view ? [view] : []; })} />;
+            })}
           </CardContent>
         </Card>
         <Card>

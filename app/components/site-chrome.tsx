@@ -15,7 +15,7 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
         </div>
       )}
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-        <Link href="/" className="relative h-[3.75rem] w-40 overflow-hidden" aria-label="SK EC Pro ホーム">
+        <Link href="/" className="relative h-[3.75rem] w-32 overflow-hidden sm:w-40" aria-label="SK EC Pro ホーム">
           <Image
             src={withBasePath("/brand/sk-ec-pro-logo.png")}
             alt="SK EC Pro"
@@ -32,7 +32,7 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
           <Link className="transition hover:text-blue-600" href="/original-products">当社オリジナル製品</Link>
           <Link className="transition hover:text-blue-600" href="/faq">FAQ</Link>
           <Link className="transition hover:text-blue-600" href="/contact">お問い合わせ</Link>
-          <Link className="transition hover:text-blue-600" href="/account">My Page</Link>
+          <Link className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-slate-950 transition hover:border-slate-400" href="/account">マイページ</Link>
           <Link className="rounded-full bg-slate-950 px-5 py-2.5 text-white transition hover:bg-blue-600" href="/estimate">
             無料見積
           </Link>
@@ -41,10 +41,10 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
           <details className="group relative">
             <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white text-slate-700" aria-label="メニューを開く"><Menu size={19} /></summary>
             <nav className="absolute right-0 top-12 grid w-64 gap-1 rounded-2xl border border-slate-100 bg-white p-3 text-sm font-medium text-slate-700 shadow-2xl" aria-label="モバイルナビゲーション">
-              <Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/purchase-agent">中国EC購入代行</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/pricing">料金</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/#shops">当社運営ショップ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/original-products">当社オリジナル製品</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/faq">FAQ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/contact">お問い合わせ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/account">My Page</Link>
+              <Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/purchase-agent">中国EC購入代行</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/pricing">料金</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/#shops">当社運営ショップ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/original-products">当社オリジナル製品</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/faq">FAQ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/contact">お問い合わせ</Link>
             </nav>
           </details>
-          <Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="/estimate">無料見積</Link>
+          <Link className="rounded-full border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-semibold text-slate-950 sm:px-3 sm:text-xs" href="/account">マイページ</Link><Link className="rounded-full bg-slate-950 px-3 py-2 text-xs font-medium text-white sm:px-4 sm:text-sm" href="/estimate">無料見積</Link>
         </div>
       </div>
     </header>
