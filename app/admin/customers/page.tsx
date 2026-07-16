@@ -27,6 +27,7 @@ type CustomerRow = {
 export default async function CustomersPage({ searchParams }: PageProps<"/admin/customers">) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
+  const deleted = params.deleted === "1";
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("customers")
@@ -46,6 +47,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
       description="見積フォームと管理者登録の顧客情報を確認・編集できます。"
       action={<Button asChild><Link href="/admin/customers/new"><Plus size={16} />新規顧客</Link></Button>}
     />
+    {deleted && <p role="status" className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">顧客と関連データを削除しました。</p>}
     <Card>
       <CardContent className="p-0">
         <form className="border-b border-slate-200 p-4">
