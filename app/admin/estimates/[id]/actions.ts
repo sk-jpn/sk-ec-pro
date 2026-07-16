@@ -241,6 +241,7 @@ export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuote
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
   if (!apiKey || !from) return { success: false, message: "メール送信設定が完了していません。" };
+  const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
 
   try {
     const estimate = await getEstimateQuoteData(estimateId);
@@ -248,7 +249,7 @@ export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuote
     const pdf = await generateEstimatePdf(estimate, { logoPath: join(process.cwd(), "public", "formosa-japan-logo.png") });
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
-      from,
+      from: sender,
       to: [estimate.customerEmail],
       replyTo: from,
       subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,

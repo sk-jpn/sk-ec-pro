@@ -263,6 +263,7 @@ export async function POST(request: Request) {
     console.error("RESEND_API_KEY または RESEND_FROM_EMAIL が設定されていません。");
     return Response.json({ message: "メール送信の設定が完了していません。時間をおいて再度お試しください。" }, { status: 503 });
   }
+  const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
 
   const receivedAt = new Intl.DateTimeFormat("ja-JP", {
     dateStyle: "long",
@@ -285,14 +286,14 @@ export async function POST(request: Request) {
     const resend = new Resend(apiKey);
     const { error } = await resend.batch.send([
       {
-        from,
+        from: sender,
         to: [from],
         replyTo: from,
         subject: `【SK EC Pro】無料見積依頼（${data.customer.name}様）`,
         html: adminEmail(data, receivedAt, imageUrlsByProduct),
       },
       {
-        from,
+        from: sender,
         to: [data.customer.email],
         replyTo: from,
         subject: "【SK EC Pro】無料見積を受け付けました",
