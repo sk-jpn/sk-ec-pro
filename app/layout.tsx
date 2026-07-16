@@ -24,11 +24,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? SITE_URL),
   title: { default: "SK EC Pro | 中国EC購入代行・輸入サポート", template: "%s | SK EC Pro" },
   description:
-    "Taobao、1688、Xianyu、Tmall、Alibabaなどの中国EC商品をお客様に代わって購入し、日本へ発送します。当社運営のYahoo!ショッピング・Amazonもご案内しています。",
+    "Taobao、Tmall、1688、Xianyu、REDなどの中国EC商品をお客様に代わって購入し、日本へ発送します。当社運営のYahoo!ショッピング・Amazonもご案内しています。",
   openGraph: {
     title: "SK EC Pro | 中国ECを、もっと簡単に。もっと安心に。",
     description:
-      "Taobao、1688、Xianyu、Tmall、Alibabaなどの中国EC商品をお客様に代わって購入し、日本へ発送します。",
+      "Taobao、Tmall、1688、Xianyu、REDなどの中国EC商品をお客様に代わって購入し、日本へ発送します。",
     type: "website",
     url: SITE_URL,
     siteName: "SK EC Pro",

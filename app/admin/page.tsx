@@ -1,15 +1,13 @@
-import { Boxes, CircleDollarSign, ClipboardCheck, Clock3, Send, Truck } from "lucide-react";
+import { Boxes, ClipboardCheck, Clock3, Truck } from "lucide-react";
 import { PageHeader } from "./admin-ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const metrics = [
-  { label: "新規見積", value: "12", note: "本日 +5", icon: ClipboardCheck },
-  { label: "対応中", value: "8", note: "要確認 3件", icon: Clock3 },
-  { label: "見積送付済", value: "21", note: "今月", icon: Send },
-  { label: "注文", value: "14", note: "今月", icon: Boxes },
-  { label: "発送待ち", value: "6", note: "中国倉庫", icon: Truck },
-  { label: "売上", value: "¥1,284,000", note: "今月（ダミー）", icon: CircleDollarSign },
+  { label: "今日の見積件数", value: "5", note: "本日受付", icon: ClipboardCheck },
+  { label: "未返信件数", value: "3", note: "対応が必要です", icon: Clock3 },
+  { label: "発送待ち件数", value: "6", note: "中国倉庫", icon: Truck },
+  { label: "注文待ち件数", value: "4", note: "入金確認済み", icon: Boxes },
 ];
 
 export default function AdminDashboard() {

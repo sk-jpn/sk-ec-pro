@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Menu } from "lucide-react";
 import { withBasePath } from "@/config/site";
 
 export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: boolean }) {
@@ -24,17 +25,26 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
             className="object-cover"
           />
         </Link>
-        <nav className="hidden items-center gap-5 text-sm font-medium text-slate-600 lg:flex" aria-label="メインナビゲーション">
+        <nav className="hidden items-center gap-4 text-[13px] font-medium text-slate-600 lg:flex" aria-label="メインナビゲーション">
           <Link className="transition hover:text-blue-600" href="/purchase-agent">中国EC購入代行</Link>
           <Link className="transition hover:text-blue-600" href="/pricing">料金</Link>
-          <Link className="transition hover:text-blue-600" href="/#shops">当社運営ショップ</Link>
-          <Link className="transition hover:text-blue-600" href="/#why">選ばれる理由</Link>
-          <Link className="transition hover:text-blue-600" href="/account">マイページ</Link>
+          <Link className="transition hover:text-blue-600" href="/original-products">当社オリジナル製品</Link>
+          <Link className="transition hover:text-blue-600" href="/faq">FAQ</Link>
+          <Link className="transition hover:text-blue-600" href="/contact">お問い合わせ</Link>
+          <Link className="transition hover:text-blue-600" href="/account">My Page</Link>
           <Link className="rounded-full bg-slate-950 px-5 py-2.5 text-white transition hover:bg-blue-600" href="/estimate">
             無料見積
           </Link>
         </nav>
-        <div className="flex items-center gap-2 lg:hidden"><Link className="px-2 py-2 text-xs font-semibold text-slate-600" href="/account">マイページ</Link><Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="/estimate">無料見積</Link></div>
+        <div className="flex items-center gap-2 lg:hidden">
+          <details className="group relative">
+            <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white text-slate-700" aria-label="メニューを開く"><Menu size={19} /></summary>
+            <nav className="absolute right-0 top-12 grid w-64 gap-1 rounded-2xl border border-slate-100 bg-white p-3 text-sm font-medium text-slate-700 shadow-2xl" aria-label="モバイルナビゲーション">
+              <Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/purchase-agent">中国EC購入代行</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/pricing">料金</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/original-products">当社オリジナル製品</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/faq">FAQ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/contact">お問い合わせ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/account">My Page</Link>
+            </nav>
+          </details>
+          <Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="/estimate">無料見積</Link>
+        </div>
       </div>
     </header>
   );
@@ -58,6 +68,8 @@ export function SiteFooter() {
       <div className="flex flex-wrap gap-6">
         <Link href="/purchase-agent" className="hover:text-blue-600">中国EC購入代行</Link>
         <Link href="/pricing" className="hover:text-blue-600">料金</Link>
+        <Link href="/original-products" className="hover:text-blue-600">当社オリジナル製品</Link>
+        <Link href="/faq" className="hover:text-blue-600">FAQ</Link>
         <Link href="/#shops" className="hover:text-blue-600">当社運営ショップ</Link>
         <Link href="/#why" className="hover:text-blue-600">選ばれる理由</Link>
         <Link href="/contact" className="hover:text-blue-600">お問い合わせ</Link>

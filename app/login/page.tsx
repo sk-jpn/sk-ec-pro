@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="w-full max-w-md">
       <div className="mb-7 text-center">
         <Image src={withBasePath("/brand/sk-ec-pro-logo.png")} width={220} height={82} alt="SK EC Pro" className="mx-auto h-auto w-48" priority />
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[.22em] text-emerald-600">Administration</p>
+        <p className="mt-4 text-xs font-semibold uppercase tracking-[.22em] text-emerald-600">My Page</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">管理画面ログイン</h1>
         <p className="mt-2 text-sm leading-6 text-slate-500">{next === "/account" ? "お見積時と同じGoogleアカウントでログインしてください。" : "許可されたGoogleアカウントでログインしてください。"}</p>
       </div>

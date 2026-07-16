@@ -27,6 +27,7 @@ type EstimateRequest = {
     deadline: string;
     prefecture: string;
     notes: string;
+    terms: boolean;
     privacy: boolean;
   };
   products: Product[];
@@ -64,6 +65,7 @@ function parseRequest(value: unknown): EstimateRequest | null {
     deadline: text(value.customer.deadline, 200),
     prefecture: text(value.customer.prefecture, 20),
     notes: text(value.customer.notes, 5_000),
+    terms: value.customer.terms === true,
     privacy: value.customer.privacy === true,
   };
 
@@ -91,7 +93,7 @@ function parseRequest(value: unknown): EstimateRequest | null {
     Number(item.quantity) >= 1,
   );
 
-  if (!customer.name || !emailValid || !customer.prefecture || !customer.privacy || !productsValid) return null;
+  if (!customer.name || !emailValid || !customer.prefecture || !customer.terms || !customer.privacy || !productsValid) return null;
   return { customer, products: products as Product[] };
 }
 

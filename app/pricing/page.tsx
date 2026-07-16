@@ -128,6 +128,10 @@ export default function PricingPage() {
             <p className="mt-8 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
               商品代金、代行手数料、中国国内送料、国際送料などを確認し、購入前にお見積りをご案内します。
             </p>
+            <div className="mt-9 grid max-w-2xl gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-blue-100 bg-white/90 p-5 shadow-lg shadow-blue-100/50"><p className="text-sm font-semibold text-slate-600">代行手数料</p><p className="mt-2 text-4xl font-bold tracking-tight text-blue-600">990円<span className="text-xl">～</span></p><p className="mt-2 text-xs text-slate-500">商品価格により変動します。</p></div>
+              <div className="rounded-2xl border border-blue-100 bg-white/90 p-5 shadow-lg shadow-blue-100/50"><p className="text-sm font-semibold text-slate-600">送料</p><p className="mt-2 text-4xl font-bold tracking-tight text-blue-600">2,000円<span className="text-xl">～</span></p><p className="mt-2 text-xs text-slate-500">配送方法・重量により変動します。</p></div>
+            </div>
           </div>
           <div className="relative hidden lg:block" aria-hidden="true">
             <div className="absolute inset-10 rounded-full bg-blue-400/20 blur-3xl" />

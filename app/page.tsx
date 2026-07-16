@@ -6,7 +6,6 @@ import {
   Check,
   ClipboardCheck,
   CreditCard,
-  Globe2,
   Handshake,
   Headphones,
   Languages,
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "./components/site-chrome";
+import { EstimateStatusSearch } from "./components/estimate-status-search";
 
 const services = [
   {
@@ -53,18 +53,18 @@ const services = [
     icon: Store,
   },
   {
-    name: "Alibaba",
-    sub: "法人向け卸売",
-    text: "卸売、法人向け商品、大口注文、OEM相談に対応。",
-    icon: Globe2,
+    name: "RED",
+    sub: "小紅書",
+    text: "中国のライフスタイルSNS・EC。話題の商品やブランド商品のご相談に対応。",
+    icon: Sparkles,
   },
 ];
 
 const steps = [
   {
     step: "STEP 1",
-    title: "商品URLを送る",
-    text: "購入希望商品のURL、数量、仕様などを送っていただきます。",
+    title: "画像・URLを送る",
+    text: "購入希望商品の画像またはURL、数量、仕様などを送っていただきます。",
     icon: Link2,
   },
   {
@@ -165,7 +165,7 @@ export default function Home() {
               </a>
             </div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-slate-500">
-              {["日本語で完結", "初回相談無料", "個人・法人対応"].map((item) => (
+              {["日本語で完結", "相談・お見積り無料", "個人・法人対応"].map((item) => (
                 <span key={item} className="flex items-center gap-1.5"><Check size={14} className="text-blue-600" />{item}</span>
               ))}
             </div>
@@ -238,7 +238,8 @@ export default function Home() {
           <div className="max-w-2xl">
             <p className="section-label">How It Works</p>
             <h2 className="section-title">ご利用の流れ</h2>
-            <p className="section-copy">購入したい商品が見つかったら、商品URLをお送りください。お見積りから日本への発送まで順番にご案内します。</p>
+            <p className="section-copy">購入したい商品の画像またはURLをフォーム・メールからお送りください。内容を確認後、お見積りから中国国内手配、日本への発送までサポートいたします。</p>
+            <p className="mt-5 inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">中国EC購入・決済代行サービス</p>
           </div>
           <div className="relative mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="absolute left-[12%] right-[12%] top-7 hidden h-px bg-blue-100 lg:block" aria-hidden="true" />
@@ -274,6 +275,8 @@ export default function Home() {
           </ul>
         </div>
       </section>
+
+      <EstimateStatusSearch />
 
       <section id="shops" className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">

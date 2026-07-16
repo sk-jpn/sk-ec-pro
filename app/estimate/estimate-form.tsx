@@ -8,13 +8,13 @@ import { withBasePath } from "@/config/site";
 
 type ProductImage = { id: string; file: File; preview: string };
 type Product = { id: number; url: string; images: ProductImage[]; quantity: string; color: string; size: string; model: string; request: string };
-type Customer = { name: string; email: string; company: string; phone: string; marketplace: string; sellerQuestion: string; shipping: string; deadline: string; prefecture: string; notes: string; privacy: boolean };
+type Customer = { name: string; email: string; company: string; phone: string; marketplace: string; sellerQuestion: string; shipping: string; deadline: string; prefecture: string; notes: string; createAccount: boolean; terms: boolean; privacy: boolean };
 type Step = "input" | "confirm" | "complete";
 
 const emptyProduct = (id: number): Product => ({ id, url: "", images: [], quantity: "1", color: "", size: "", model: "", request: "" });
-const initialCustomer: Customer = { name: "", email: "", company: "", phone: "", marketplace: "", sellerQuestion: "", shipping: "おまかせ", deadline: "", prefecture: "", notes: "", privacy: false };
+const initialCustomer: Customer = { name: "", email: "", company: "", phone: "", marketplace: "", sellerQuestion: "", shipping: "おまかせ", deadline: "", prefecture: "", notes: "", createAccount: true, terms: false, privacy: false };
 const prefectures = ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"];
-const marketplaces = ["Taobao（淘宝）", "1688", "Xianyu（闲鱼・咸鱼）", "Tmall（天猫）", "Alibaba", "その他"];
+const marketplaces = ["Taobao（淘宝）", "Tmall（天猫）", "1688", "Xianyu（闲鱼）", "RED（小紅書）", "その他"];
 
 function fieldClass(error?: string, textarea = false) {
   return `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-300 focus:ring-4 ${textarea ? "min-h-32 resize-y py-3" : ""} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-100"}`;
@@ -25,12 +25,12 @@ function ErrorText({ message, id }: { message?: string; id: string }) { return m
 
 function StepIndicator({ current }: { current: Step }) {
   const active = current === "input" ? 0 : current === "confirm" ? 1 : 2;
-  return <ol className="mx-auto mb-10 flex max-w-3xl items-center" aria-label="見積依頼の進行状況">
+  return <><ol className="mx-auto mb-10 flex max-w-3xl items-center" aria-label="見積依頼の進行状況">
     {["入力", "確認", "送信完了"].map((label, index) => <li key={label} className={`flex items-center ${index < 2 ? "flex-1" : ""}`} aria-current={active === index ? "step" : undefined}>
       <div className="flex min-w-16 flex-col items-center gap-2 text-center"><span className={`grid size-9 place-items-center rounded-full text-sm font-bold ${index <= active ? "bg-blue-600 text-white" : "border border-slate-200 bg-white text-slate-400"}`}>{index < active ? <CheckCircle2 size={18} /> : index + 1}</span><span className={`text-[10px] font-bold tracking-wider sm:text-xs ${active === index ? "text-blue-700" : "text-slate-400"}`}>STEP {index + 1}<span className="mt-0.5 block text-xs tracking-normal sm:text-sm">{label}</span></span></div>
       {index < 2 && <span className={`mx-2 h-px flex-1 sm:mx-5 ${index < active ? "bg-blue-500" : "bg-slate-200"}`} />}
     </li>)}
-  </ol>;
+  </ol>{current === "input" && <div className="mx-auto mb-6 grid max-w-3xl gap-3"><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold text-slate-800"><input id="create-account" type="checkbox" defaultChecked className="mt-0.5 size-5 shrink-0 accent-blue-600" /><span>アカウントを作成する（推奨）<span className="mt-2 block text-xs font-normal leading-6 text-slate-600">アカウントを作成すると、見積履歴・注文状況・発送状況をマイページから確認できます。</span></span></label><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700"><input id="terms-agreement" type="checkbox" className="mt-0.5 size-5 shrink-0 accent-blue-600" aria-invalid="false" /><span><Link href="/terms" className="text-blue-600 underline decoration-blue-200 underline-offset-4">利用規約</Link>に同意する<Required /><span id="terms-inline-error" className="mt-2 hidden text-xs font-semibold text-red-600">利用規約への同意が必要です。</span></span></label></div>}</>;
 }
 
 function Card({ title, icon, children, action }: { title: string; icon: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
@@ -71,6 +71,8 @@ export function EstimateForm({ testMode = false }: { testMode?: boolean }) {
     if (!customer.name.trim()) next.name = "お名前を入力してください。";
     if (!customer.email.trim()) next.email = "メールアドレスを入力してください。"; else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) next.email = "正しい形式のメールアドレスを入力してください。";
     if (!customer.prefecture) next.prefecture = "お届け先の都道府県を選択してください。";
+    const termsInput = document.querySelector<HTMLInputElement>("#terms-agreement");
+    if (!termsInput?.checked) { next.terms = "利用規約への同意が必要です。"; termsInput?.setAttribute("aria-invalid", "true"); document.querySelector("#terms-inline-error")?.classList.remove("hidden"); }
     if (!customer.privacy) next.privacy = "プライバシーポリシーへの同意が必要です。";
     products.forEach((product) => { if (!product.url.trim() && product.images.length === 0) next[`product-${product.id}-url`] = "商品URLまたは商品画像を1つ以上入力してください。"; else if (product.url.trim() && !safeUrl(product.url)) next[`product-${product.id}-url`] = "http:// または https:// から始まるURLを入力してください。"; if (!product.quantity || Number(product.quantity) < 1) next[`product-${product.id}-quantity`] = "数量は1以上で入力してください。"; });
     setErrors(next);
@@ -78,7 +80,7 @@ export function EstimateForm({ testMode = false }: { testMode?: boolean }) {
     return true;
   };
 
-  const showConfirmation = (event: React.FormEvent) => { event.preventDefault(); if (validate()) { setStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); } };
+  const showConfirmation = (event: React.FormEvent) => { event.preventDefault(); if (validate()) { setCustomer((current) => ({ ...current, terms: true, createAccount: document.querySelector<HTMLInputElement>("#create-account")?.checked ?? false })); setStep("confirm"); window.scrollTo({ top: 0, behavior: "smooth" }); } };
   const edit = () => { setSendError(""); setStep("input"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const submitEstimate = async () => { if (isSending) return; setIsSending(true); setSendError(""); try { const formData = new FormData(); formData.set("payload", JSON.stringify({ customer, products: products.map(({ images, ...product }) => ({ ...product, imageCount: images.length })) })); products.forEach((product, index) => product.images.forEach((image) => formData.append(`product-${index}-images`, image.file, image.file.name))); const response = await fetch("/api/estimate", { method: "POST", body: formData }); const result = await response.json().catch(() => null) as { message?: string } | null; if (!response.ok) throw new Error(result?.message || "送信に失敗しました。時間をおいて再度お試しください。"); setStep("complete"); window.scrollTo({ top: 0, behavior: "smooth" }); } catch (error) { setSendError(error instanceof Error ? error.message : "送信に失敗しました。時間をおいて再度お試しください。"); } finally { setIsSending(false); } };
 

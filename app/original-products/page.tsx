@@ -1,0 +1,16 @@
+import type { Metadata } from "next";
+import Image from "next/image";
+import { ArrowUpRight, PackageCheck, Sparkles } from "lucide-react";
+import { SiteFooter, SiteHeader } from "../components/site-chrome";
+import { withBasePath } from "@/config/site";
+
+export const metadata: Metadata = { title: "当社オリジナル製品", description: "SK EC Proのオリジナルブランド iFormosa のFFヒーター、コンビヒーターをご紹介します。" };
+
+const products = [
+  { code: "IFPHD2KW12V", image: "/products/ifphd2kw12v.jpg", name: "iFormosa FFヒーター 12V 2KW", description: "軽油・灯油に対応した12Vパーキングヒーター。車中泊、キャンピングカー、軽バン、トラックや船舶などの暖房に。低燃費で、国内1年保証付きです。", href: "https://store.shopping.yahoo.co.jp/taobaonotatsujinpro/ifphd2kw12v.html" },
+  { code: "IF-DSBL-6K", image: "/products/if-dsbl-6k.jpg", name: "iFormosa 6KW FFコンビヒーター D6", description: "空気暖房と給湯を一台にまとめた、12V・100V対応の軽油ヒーターボイラー。自動温度制御を備え、キャラバンやキャンピングカーに適した高出力モデルです。", href: "https://store.shopping.yahoo.co.jp/taobaonotatsujinpro/if-dsbl-6k.html" },
+];
+
+export default function OriginalProductsPage() {
+  return <main className="min-h-screen bg-white text-slate-950"><SiteHeader /><section className="hero-glow pt-20"><div className="mx-auto max-w-7xl px-5 py-24 sm:px-8 sm:py-32 lg:px-10"><div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-xs font-semibold text-blue-700"><Sparkles size={14} />Original Products</div><h1 className="section-title mt-7">当社オリジナル製品</h1><p className="section-copy">実用性と使いやすさにこだわった、SK EC Proのオリジナルブランド製品をご紹介します。</p></div></section><section className="border-y border-slate-100 bg-slate-50/70 py-20 sm:py-28"><div className="mx-auto grid max-w-7xl gap-6 px-5 sm:px-8 lg:grid-cols-2 lg:px-10">{products.map((product) => <article key={product.code} className="group flex flex-col overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-[0_20px_60px_-45px_rgba(15,23,42,.35)]"><div className="relative aspect-square overflow-hidden bg-white"><Image src={withBasePath(product.image)} alt={product.name} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-contain p-6 transition duration-500 group-hover:scale-[1.03]" /></div><div className="flex flex-1 flex-col border-t border-slate-100 p-6 sm:p-8"><p className="text-xs font-bold tracking-[.15em] text-blue-600">{product.code}</p><h2 className="mt-3 text-2xl font-semibold tracking-tight">{product.name}</h2><p className="mt-4 flex-1 text-sm leading-7 text-slate-600">{product.description}</p><div className="mt-8"><a href={product.href} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700">Yahoo!ショップで見る<ArrowUpRight size={17} /></a>{/* 将来の自社購入ボタンはこのアクション領域に追加 */}</div></div></article>)}</div></section><section className="py-20"><div className="mx-auto flex max-w-3xl items-start gap-4 px-5 sm:px-8"><span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600"><PackageCheck size={22} /></span><div><h2 className="text-lg font-semibold">販売・サポートについて</h2><p className="mt-2 text-sm leading-7 text-slate-600">現在のご購入手続き、価格、在庫状況はYahoo!ショッピングの商品ページでご確認ください。</p></div></div></section><SiteFooter /></main>;
+}
