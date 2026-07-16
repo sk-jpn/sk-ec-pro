@@ -8,6 +8,9 @@ export async function requireCustomerUser() {
   if (!user) redirect("/login");
 
   const { error } = await supabase.rpc("claim_customer_account");
+  if (error?.message.toLowerCase().includes("jwt issued at future")) {
+    redirect("/auth/account-error");
+  }
   if (error) throw new Error(`お客様情報を連携できませんでした: ${error.message}`);
   return { user, supabase };
 }
