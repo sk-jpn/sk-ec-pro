@@ -12,6 +12,7 @@ export type ApproveEstimateState = {
   success: boolean;
   message: string;
 };
+const CUSTOMER_APPROVAL_STATUSES = ["見積作成完了", "お客様確認中"];
 
 export async function approveEstimate(
   _previousState: ApproveEstimateState,
@@ -27,11 +28,13 @@ export async function approveEstimate(
   const { supabase: customerClient } = await requireCustomerUser();
   const { data: ownedEstimate } = await customerClient.from("estimates").select("id, status, approved_at").eq("estimate_no", estimateNumber).maybeSingle();
   if (!ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
+  if (!CUSTOMER_APPROVAL_STATUSES.includes(ownedEstimate.status)) return { success: false, message: "見積作成が完了するまで承認できません。" };
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
     .update({ status: "approved", approved_at: new Date().toISOString(), payment_method: PAYMENT_METHODS.bankTransfer, payment_fee: 0, stripe_checkout_session_id: null })
     .eq("id", ownedEstimate.id)
+    .in("status", CUSTOMER_APPROVAL_STATUSES)
     .is("approved_at", null)
     .neq("status", "approved")
     .neq("status", "キャンセル")
@@ -70,6 +73,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
     .eq("estimate_no", normalizedNumber)
     .maybeSingle();
   if (ownershipError || !ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
+  if (!CUSTOMER_APPROVAL_STATUSES.includes(ownedEstimate.status)) return { success: false, message: "見積作成が完了するまで決済できません。" };
   const supabase = createSupabaseAdminClient();
   const current = ownedEstimate;
   if (current.status === "キャンセル") return { success: false, message: "キャンセルされた見積は決済できません。" };
@@ -118,6 +122,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
         stripe_checkout_session_id: session.id,
       })
       .eq("id", current.id)
+      .in("status", CUSTOMER_APPROVAL_STATUSES)
       .is("paid_at", null)
       .neq("status", "キャンセル")
       .select("id")

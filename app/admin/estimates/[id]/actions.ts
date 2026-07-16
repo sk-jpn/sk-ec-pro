@@ -165,11 +165,15 @@ export async function updateEstimateQuote(
   const issueDate = formData.get("quoteIssueDate");
   const validUntil = formData.get("validUntil");
   const paymentMethod = formData.get("paymentMethod");
+  const saveMode = formData.get("saveMode");
   const feeNames = ["chinaShippingFee", "internationalShippingFee", "agencyFee", "otherFee", "discount", "tax"] as const;
   const fees = feeNames.map((name) => money(formData.get(name)));
 
   if (typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId)) {
     return { success: false, message: "見積IDが正しくありません。" };
+  }
+  if (saveMode !== "draft" && saveMode !== "complete") {
+    return { success: false, message: "保存方法が正しくありません。" };
   }
   if (itemIds.length < 1 || itemIds.some((id) => typeof id !== "string" || !UUID_PATTERN.test(id))) {
     return { success: false, message: "商品情報が正しくありません。" };
@@ -230,8 +234,23 @@ export async function updateEstimateQuote(
     return { success: false, message: "商品情報を保存できませんでした。" };
   }
 
+  const nextStatus = saveMode === "complete" ? "見積作成完了" : "見積作成中";
+  const eligibleStatuses = saveMode === "complete" ? ["新規", "見積作成中"] : ["新規"];
+  const { error: statusError } = await supabase
+    .from("estimates")
+    .update({ status: nextStatus })
+    .eq("id", estimateId)
+    .in("status", eligibleStatuses);
+  if (statusError) {
+    console.error("見積ステータスの更新に失敗しました。", statusError);
+    return { success: false, message: "商品情報は保存されましたが、見積ステータスを更新できませんでした。" };
+  }
+
+  revalidatePath("/admin/estimates");
   revalidatePath(`/admin/estimates/${estimateId}`);
-  return { success: true, message: "見積書の設定を保存しました。" };
+  return saveMode === "complete"
+    ? { success: true, message: "見積内容を保存し、見積作成完了へ更新しました。" }
+    : { success: true, message: "見積内容を一時保存しました。" };
 }
 
 export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuoteState> {
@@ -244,6 +263,10 @@ export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuote
   const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
 
   try {
+    const statusClient = createSupabaseAdminClient();
+    const { data: statusEstimate, error: statusCheckError } = await statusClient.from("estimates").select("status").eq("id", estimateId).maybeSingle();
+    if (statusCheckError || !statusEstimate) return { success: false, message: "見積の状態を確認できませんでした。" };
+    if (statusEstimate.status !== "見積作成完了") return { success: false, message: "見積作成完了の案件のみお客様へ送信できます。" };
     const estimate = await getEstimateQuoteData(estimateId);
     if (!estimate) return { success: false, message: "見積が見つかりません。" };
     const pdf = await generateEstimatePdf(estimate, { logoPath: join(process.cwd(), "public", "formosa-japan-logo.png") });

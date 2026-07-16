@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 const STEPS = [
   { label: "受付", statuses: ["新規", "未対応"] },
-  { label: "見積作成", statuses: ["見積作成中", "対応中"] },
+  { label: "見積作成", statuses: ["見積作成中", "見積作成完了", "対応中"] },
   { label: "お客様確認", statuses: ["お客様確認中", "見積送付済"] },
   { label: "発注", statuses: ["approved", "paid", "発注済", "注文確定", "購入済"] },
   { label: "中国発送", statuses: ["中国発送", "中国倉庫"] },

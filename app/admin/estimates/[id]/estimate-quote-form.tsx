@@ -70,7 +70,7 @@ export function EstimateQuoteForm({
     <Card>
       <CardHeader>
         <CardTitle>見積金額編集</CardTitle>
-        <p className="mt-2 text-xs leading-6 text-slate-400">入力中の小計・合計はリアルタイムで計算されます。PDF生成と送信には保存済みの金額が使用されます。</p>
+        <p className="mt-2 text-xs leading-6 text-slate-400">入力中の小計・合計はリアルタイムで計算されます。一時保存では顧客承認を開始せず、見積完了後に承認可能になります。</p>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-8">
@@ -120,7 +120,8 @@ export function EstimateQuoteForm({
           </div>
 
           <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button type="submit" disabled={saving || sending}><Save size={16} />{saving ? "保存中…" : "保存"}</Button>
+            <Button type="submit" name="saveMode" value="draft" variant="outline" disabled={saving || sending}><Save size={16} />{saving ? "保存中…" : "一時保存"}</Button>
+            <Button type="submit" name="saveMode" value="complete" disabled={saving || sending}><Save size={16} />{saving ? "処理中…" : "見積完了"}</Button>
             <Button type="button" variant="outline" asChild><a href={`/admin/estimates/${estimateId}/pdf`} target="_blank" rel="noreferrer"><FileText size={16} />PDF生成<ExternalLink size={14} /></a></Button>
             <Button type="button" disabled={saving || sending} onClick={handleSend} className="bg-blue-600 text-white hover:bg-blue-700"><Mail size={16} />{sending ? "送信中…" : "お客様へ送信"}</Button>
             {(sendState.message || saveState.message) && <p aria-live="polite" className={`text-sm ${(sendState.message ? sendState.success : saveState.success) ? "text-emerald-700" : "text-red-600"}`}>{sendState.message || saveState.message}</p>}

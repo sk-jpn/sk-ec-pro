@@ -15,6 +15,7 @@ export function PaymentPanel({
   approved,
   paid,
   cancelled,
+  approvalAllowed,
 }: {
   estimateNumber: string;
   estimateTotal: number;
@@ -22,6 +23,7 @@ export function PaymentPanel({
   approved: boolean;
   paid: boolean;
   cancelled: boolean;
+  approvalAllowed: boolean;
 }) {
   const recognizedMethod = Object.values(PAYMENT_METHODS).includes(initialPaymentMethod as PaymentMethod) ? initialPaymentMethod as PaymentMethod : PAYMENT_METHODS.bankTransfer;
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(recognizedMethod);
@@ -37,6 +39,9 @@ export function PaymentPanel({
   if (cancelled) return <p className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center text-sm font-semibold text-red-700">キャンセルされた見積は承認・決済できません。</p>;
   if ((approved || bankState.success) && paymentMethod === PAYMENT_METHODS.bankTransfer) {
     return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center text-emerald-900"><CheckCircle2 className="mx-auto text-emerald-600" size={30} /><p className="mt-4 whitespace-pre-line text-base font-semibold leading-7">{bankState.success ? bankState.message : "ご注文を受け付けています。\n銀行振込のご案内をご確認ください。"}</p></div>;
+  }
+  if (!approvalAllowed) {
+    return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><p className="font-semibold text-amber-900">現在、見積を作成しています</p><p className="mt-2 text-sm leading-6 text-amber-700">管理者が見積作成を完了するまで、承認・決済はできません。</p></div>;
   }
 
   const startCardCheckout = () => startCardTransition(async () => {

@@ -14,14 +14,14 @@ export default async function AdminDashboard() {
   const supabase = createSupabaseAdminClient();
   const [today, unanswered, shipping, ordering, recent] = await Promise.all([
     supabase.from("estimates").select("id", { count: "exact", head: true }).gte("created_at", todayStartJst()),
-    supabase.from("estimates").select("id", { count: "exact", head: true }).in("status", ["新規", "見積作成中"]),
+    supabase.from("estimates").select("id", { count: "exact", head: true }).in("status", ["新規", "見積作成中", "見積作成完了"]),
     supabase.from("orders").select("id", { count: "exact", head: true }).in("shipping_status", ["受付", "中国発送"]),
     supabase.from("estimates").select("id", { count: "exact", head: true }).in("status", ["approved", "paid"]),
     supabase.from("estimates").select("id, estimate_no, status, created_at, customers(name)").order("created_at", { ascending: false }).limit(5),
   ]);
   const metrics = [
     { label: "今日の見積件数", value: today.count ?? 0, note: "本日受付", icon: ClipboardCheck },
-    { label: "未返信件数", value: unanswered.count ?? 0, note: "新規・見積作成中", icon: Clock3 },
+    { label: "未返信件数", value: unanswered.count ?? 0, note: "新規・作成中・送信待ち", icon: Clock3 },
     { label: "発送待ち件数", value: shipping.count ?? 0, note: "受付・中国発送", icon: Truck },
     { label: "注文待ち件数", value: ordering.count ?? 0, note: "承認・入金済み", icon: Boxes },
   ];

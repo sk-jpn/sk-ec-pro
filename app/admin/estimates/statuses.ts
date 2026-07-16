@@ -1,6 +1,7 @@
 export const ESTIMATE_STATUSES = [
   "新規",
   "見積作成中",
+  "見積作成完了",
   "お客様確認中",
   "approved",
   "paid",
