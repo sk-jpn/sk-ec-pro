@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useMemo, useState, useTransition } from "react";
-import { ExternalLink, FileText, Mail, Save } from "lucide-react";
+import { ExternalLink, FileText, Mail, Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { calculateQuoteTotals } from "@/lib/estimates/quote-calculations";
-import { sendEstimateQuote, updateEstimateQuote, type UpdateQuoteState } from "./actions";
+import { addEstimateItem, sendEstimateQuote, updateEstimateQuote, type AddEstimateItemState, type UpdateQuoteState } from "./actions";
 
 type QuoteItem = {
   id: string;
@@ -58,6 +58,8 @@ export function EstimateQuoteForm({
   const [fees, setFees] = useState<Fees>({ chinaShippingFee, internationalShippingFee, agencyFee, otherFee, discount, tax });
   const [sendState, setSendState] = useState<UpdateQuoteState>(initialState);
   const [sending, startSending] = useTransition();
+  const [addState, setAddState] = useState<AddEstimateItemState>(initialState);
+  const [adding, startAdding] = useTransition();
   const totals = useMemo(() => calculateQuoteTotals(items, fees), [items, fees]);
 
   const updateItem = (id: string, field: "productName" | "quantity" | "unitPrice", value: string) => {
@@ -65,6 +67,11 @@ export function EstimateQuoteForm({
   };
   const updateFee = (field: keyof Fees, value: string) => setFees((current) => ({ ...current, [field]: Number(value) || 0 }));
   const handleSend = () => startSending(async () => setSendState(await sendEstimateQuote(estimateId)));
+  const handleAddItem = () => startAdding(async () => {
+    const result = await addEstimateItem(estimateId);
+    setAddState(result);
+    if (result.item) setItems((current) => current.length >= 10 ? current : [...current, result.item!]);
+  });
 
   return (
     <Card>
@@ -82,6 +89,10 @@ export function EstimateQuoteForm({
           </div>
 
           <div>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h3 className="text-sm font-semibold text-slate-800">見積商品</h3><p className="mt-1 text-xs text-slate-400">商品名は最大10件まで追加できます。</p></div>
+              <Button type="button" variant="outline" onClick={handleAddItem} disabled={saving || sending || adding || items.length >= 10}><Plus size={16} />{adding ? "追加中…" : `商品を追加（${items.length}/10）`}</Button>
+            </div>
             <div className="mb-3 hidden grid-cols-[minmax(0,1fr)_6rem_9rem_9rem] gap-3 px-4 text-xs font-semibold text-slate-500 sm:grid"><span>商品名</span><span className="text-right">数量</span><span className="text-right">単価</span><span className="text-right">小計</span></div>
             <div className="space-y-3">
               {items.map((item, index) => (
@@ -124,7 +135,7 @@ export function EstimateQuoteForm({
             <Button type="submit" name="saveMode" value="complete" disabled={saving || sending}><Save size={16} />{saving ? "処理中…" : "見積完了"}</Button>
             <Button type="button" variant="outline" asChild><a href={`/admin/estimates/${estimateId}/pdf`} target="_blank" rel="noreferrer"><FileText size={16} />PDF生成<ExternalLink size={14} /></a></Button>
             <Button type="button" disabled={saving || sending} onClick={handleSend} className="bg-blue-600 text-white hover:bg-blue-700"><Mail size={16} />{sending ? "送信中…" : "お客様へ送信"}</Button>
-            {(sendState.message || saveState.message) && <p aria-live="polite" className={`text-sm ${(sendState.message ? sendState.success : saveState.success) ? "text-emerald-700" : "text-red-600"}`}>{sendState.message || saveState.message}</p>}
+            {(sendState.message || saveState.message || addState.message) && <p aria-live="polite" className={`text-sm ${(sendState.message ? sendState.success : saveState.message ? saveState.success : addState.success) ? "text-emerald-700" : "text-red-600"}`}>{sendState.message || saveState.message || addState.message}</p>}
           </div>
         </form>
       </CardContent>

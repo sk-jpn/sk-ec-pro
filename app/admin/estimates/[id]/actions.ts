@@ -17,12 +17,51 @@ export type UpdateEstimateState = {
 };
 
 export type UpdateQuoteState = UpdateEstimateState;
+export type AddEstimateItemState = UpdateEstimateState & {
+  item?: { id: string; url: string; productName: string; quantity: number; unitPrice: number };
+};
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function textField(formData: FormData, name: string, max: number) {
   const value = formData.get(name);
   return typeof value === "string" && value.length <= max ? value.trim() : null;
+}
+
+export async function addEstimateItem(estimateId: string): Promise<AddEstimateItemState> {
+  await requireAdminUser();
+  if (!UUID_PATTERN.test(estimateId)) return { success: false, message: "見積IDが正しくありません。" };
+
+  const supabase = createSupabaseAdminClient();
+  const { data: currentItems, error: countError } = await supabase
+    .from("estimate_items")
+    .select("id, item_index")
+    .eq("estimate_id", estimateId)
+    .order("item_index", { ascending: false });
+  if (countError) return { success: false, message: "商品件数を確認できませんでした。" };
+  if ((currentItems?.length ?? 0) >= 10) return { success: false, message: "商品は最大10件までです。" };
+
+  const itemIndex = (currentItems?.[0]?.item_index ?? 0) + 1;
+  const { data, error } = await supabase.from("estimate_items").insert({
+    estimate_id: estimateId,
+    item_index: itemIndex,
+    url: "",
+    product_name: null,
+    quantity: 1,
+    unit_price: 0,
+    request: "",
+  }).select("id").single();
+  if (error) {
+    console.error("見積商品行の追加に失敗しました。", error);
+    return { success: false, message: "商品を追加できませんでした。" };
+  }
+
+  revalidatePath(`/admin/estimates/${estimateId}`);
+  return {
+    success: true,
+    message: `商品${itemIndex}を追加しました。`,
+    item: { id: data.id, url: "", productName: "", quantity: 1, unitPrice: 0 },
+  };
 }
 
 export async function updateEstimateItem(_state: UpdateEstimateState, formData: FormData): Promise<UpdateEstimateState> {

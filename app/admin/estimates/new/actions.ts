@@ -18,38 +18,40 @@ function value(formData: FormData, name: string, maxLength: number) {
 export async function createManualEstimate(_state: CreateEstimateState, formData: FormData): Promise<CreateEstimateState> {
   await requireAdminUser();
   const customerId = formData.get("customerId");
-  const productName = value(formData, "productName", 300);
-  const url = value(formData, "url", 2_000);
-  const rawQuantity = formData.get("quantity");
-  const color = value(formData, "color", 200);
-  const size = value(formData, "size", 200);
-  const model = value(formData, "model", 200);
-  const request = value(formData, "request", 2_000);
+  const rawItemCount = formData.get("itemCount");
 
   if (typeof customerId !== "string" || !UUID_PATTERN.test(customerId)) return { success: false, message: "顧客を選択してください。" };
-  if ([productName, url, color, size, model, request].some((entry) => entry === null)) return { success: false, message: "入力内容を確認してください。" };
-  if (!productName && !url && !request) return { success: false, message: "商品名・商品URL・希望内容のいずれかを入力してください。" };
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
-    } catch {
-      return { success: false, message: "商品URLを正しく入力してください。" };
+  const itemCount = typeof rawItemCount === "string" && /^\d{1,2}$/.test(rawItemCount) ? Number(rawItemCount) : 0;
+  if (!Number.isInteger(itemCount) || itemCount < 1 || itemCount > 10) return { success: false, message: "商品は1件から10件まで登録できます。" };
+
+  const items = [];
+  for (let index = 0; index < itemCount; index += 1) {
+    const productName = value(formData, `productName_${index}`, 300);
+    const url = value(formData, `url_${index}`, 2_000);
+    const rawQuantity = formData.get(`quantity_${index}`);
+    const color = value(formData, `color_${index}`, 200);
+    const size = value(formData, `size_${index}`, 200);
+    const model = value(formData, `model_${index}`, 200);
+    const request = value(formData, `request_${index}`, 2_000);
+    if ([productName, url, color, size, model, request].some((entry) => entry === null)) return { success: false, message: `商品${index + 1}の入力内容を確認してください。` };
+    if (!productName && !url && !request) return { success: false, message: `商品${index + 1}の商品名・URL・希望内容のいずれかを入力してください。` };
+    if (url) {
+      try {
+        const parsed = new URL(url);
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+      } catch {
+        return { success: false, message: `商品${index + 1}のURLを正しく入力してください。` };
+      }
     }
+    const quantity = typeof rawQuantity === "string" && /^\d{1,10}$/.test(rawQuantity) ? Number(rawQuantity) : 0;
+    if (!Number.isSafeInteger(quantity) || quantity < 1) return { success: false, message: `商品${index + 1}の数量を正しく入力してください。` };
+    items.push({ productName, url, quantity, color, size, model, request });
   }
-  const quantity = typeof rawQuantity === "string" && /^\d{1,10}$/.test(rawQuantity) ? Number(rawQuantity) : 0;
-  if (!Number.isSafeInteger(quantity) || quantity < 1) return { success: false, message: "数量を正しく入力してください。" };
 
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.rpc("create_manual_estimate", {
+  const { data, error } = await supabase.rpc("create_manual_estimate_items", {
     p_customer_id: customerId,
-    p_product_name: productName ?? "",
-    p_url: url ?? "",
-    p_quantity: quantity,
-    p_color: color ?? "",
-    p_size: size ?? "",
-    p_model: model ?? "",
-    p_request: request ?? "",
+    p_items: items,
   });
   const created = Array.isArray(data) ? data[0] : null;
   if (error || !created?.estimate_id) {
