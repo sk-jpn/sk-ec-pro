@@ -10,7 +10,10 @@ create table if not exists public.customers (
   company text,
   email text not null,
   phone text,
+  postal_code text,
   prefecture text not null,
+  address_line1 text,
+  address_line2 text,
   auth_user_id uuid references auth.users(id) on delete set null
 );
 

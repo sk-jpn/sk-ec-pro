@@ -15,7 +15,10 @@ type CustomerEditValues = {
   company: string;
   email: string;
   phone: string;
+  postalCode: string;
   prefecture: string;
+  addressLine1: string;
+  addressLine2: string;
 };
 
 export function CustomerEditForm({ customer }: { customer: CustomerEditValues }) {
@@ -40,11 +43,23 @@ export function CustomerEditForm({ customer }: { customer: CustomerEditValues })
         </label>
         <label className={labelClass}>
           電話番号
-          <Input name="phone" type="tel" defaultValue={customer.phone} maxLength={30} disabled={pending} />
+          <Input name="phone" type="tel" defaultValue={customer.phone} maxLength={30} required disabled={pending} />
+        </label>
+        <label className={labelClass}>
+          郵便番号
+          <Input name="postalCode" defaultValue={customer.postalCode} maxLength={12} required disabled={pending} />
         </label>
         <label className={labelClass}>
           都道府県
           <Input name="prefecture" defaultValue={customer.prefecture} maxLength={20} required disabled={pending} />
+        </label>
+        <label className={`${labelClass} sm:col-span-2`}>
+          お届け先住所
+          <Input name="addressLine1" defaultValue={customer.addressLine1} maxLength={200} required disabled={pending} />
+        </label>
+        <label className={`${labelClass} sm:col-span-2`}>
+          建物名・部屋番号
+          <Input name="addressLine2" defaultValue={customer.addressLine2} maxLength={200} disabled={pending} />
         </label>
       </div>
       <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">

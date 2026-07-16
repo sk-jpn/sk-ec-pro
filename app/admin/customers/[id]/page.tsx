@@ -14,7 +14,10 @@ type CustomerDetail = {
   company: string | null;
   email: string;
   phone: string | null;
+  postal_code: string | null;
   prefecture: string;
+  address_line1: string | null;
+  address_line2: string | null;
   auth_user_id: string | null;
   estimates: { count: number }[];
 };
@@ -24,7 +27,7 @@ export default async function CustomerEditPage({ params }: PageProps<"/admin/cus
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, company, email, phone, prefecture, auth_user_id, estimates(count)")
+    .select("id, name, company, email, phone, postal_code, prefecture, address_line1, address_line2, auth_user_id, estimates(count)")
     .eq("id", id)
     .maybeSingle();
 
@@ -45,7 +48,7 @@ export default async function CustomerEditPage({ params }: PageProps<"/admin/cus
       <Card>
         <CardHeader><CardTitle>顧客情報編集</CardTitle></CardHeader>
         <CardContent>
-          <CustomerEditForm customer={{ id: customer.id, name: customer.name, company: customer.company ?? "", email: customer.email, phone: customer.phone ?? "", prefecture: customer.prefecture }} />
+          <CustomerEditForm customer={{ id: customer.id, name: customer.name, company: customer.company ?? "", email: customer.email, phone: customer.phone ?? "", postalCode: customer.postal_code ?? "", prefecture: customer.prefecture, addressLine1: customer.address_line1 ?? "", addressLine2: customer.address_line2 ?? "" }} />
         </CardContent>
       </Card>
     </>

@@ -49,8 +49,15 @@ export async function updateProfile(_state: ProfileState, formData: FormData): P
   if (!fullName) return { success: false, message: "氏名を入力してください。" };
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { success: false, message: "正しいメールアドレスを入力してください。" };
   if ([phone, postalCode, prefecture, addressLine1, addressLine2].some((entry) => entry === null)) return { success: false, message: "入力内容を確認してください。" };
+  if (!phone || !postalCode || !prefecture || !addressLine1) return { success: false, message: "建物名・部屋番号以外の項目はすべて入力してください。" };
   const { error } = await supabase.from("profiles").update({ full_name: fullName, email: email.toLowerCase(), phone: phone || null, postal_code: postalCode || null, prefecture: prefecture || null, address_line1: addressLine1 || null, address_line2: addressLine2 || null, updated_at: new Date().toISOString() }).eq("id", user.id);
   if (error) return { success: false, message: "プロフィールを保存できませんでした。" };
+  const admin = createSupabaseAdminClient();
+  const { error: customerError } = await admin.from("customers").update({ name: fullName, email: email.toLowerCase(), phone, postal_code: postalCode, prefecture, address_line1: addressLine1, address_line2: addressLine2 || null }).eq("auth_user_id", user.id);
+  if (customerError) {
+    console.error("プロフィールに紐づく顧客情報を更新できませんでした。", customerError);
+    return { success: false, message: "プロフィールは保存されましたが、顧客情報を更新できませんでした。" };
+  }
   revalidatePath("/account"); revalidatePath("/account/profile");
   return { success: true, message: "プロフィールを保存しました。" };
 }

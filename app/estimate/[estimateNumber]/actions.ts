@@ -13,6 +13,21 @@ export type ApproveEstimateState = {
   message: string;
 };
 const CUSTOMER_APPROVAL_STATUSES = ["お客様確認中"];
+const ADDRESS_REQUIRED_MESSAGE = "商品の発送にはお届け先住所の登録が必要です。プロフィール画面で必須項目を入力してから、もう一度承認してください。";
+
+async function hasCompleteShippingAddress(userId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name, email, phone, postal_code, prefecture, address_line1")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("承認前のお届け先住所確認に失敗しました。", error);
+    return false;
+  }
+  return Boolean(data?.full_name?.trim() && data.email?.trim() && data.phone?.trim() && data.postal_code?.trim() && data.prefecture?.trim() && data.address_line1?.trim());
+}
 
 export async function approveEstimate(
   _previousState: ApproveEstimateState,
@@ -25,10 +40,11 @@ export async function approveEstimate(
   if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) return { success: false, message: "見積番号が正しくありません。" };
   if (paymentMethod !== PAYMENT_METHODS.bankTransfer) return { success: false, message: "支払方法が正しくありません。" };
 
-  const { supabase: customerClient } = await requireCustomerUser();
+  const { user, supabase: customerClient } = await requireCustomerUser();
   const { data: ownedEstimate } = await customerClient.from("estimates").select("id, status, approved_at").eq("estimate_no", estimateNumber).maybeSingle();
   if (!ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
   if (!CUSTOMER_APPROVAL_STATUSES.includes(ownedEstimate.status)) return { success: false, message: "見積作成が完了するまで承認できません。" };
+  if (!(await hasCompleteShippingAddress(user.id))) return { success: false, message: ADDRESS_REQUIRED_MESSAGE };
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
@@ -66,7 +82,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
   const normalizedNumber = estimateNumber.trim().toUpperCase();
   if (!/^SK\d{6}-\d{4}$/.test(normalizedNumber)) return { success: false, message: "見積番号が正しくありません。" };
 
-  const { supabase: customerClient } = await requireCustomerUser();
+  const { user, supabase: customerClient } = await requireCustomerUser();
   const { data: ownedEstimate, error: ownershipError } = await customerClient
     .from("estimates")
     .select("id, status, approved_at, paid_at")
@@ -74,6 +90,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
     .maybeSingle();
   if (ownershipError || !ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
   if (!CUSTOMER_APPROVAL_STATUSES.includes(ownedEstimate.status)) return { success: false, message: "見積作成が完了するまで決済できません。" };
+  if (!(await hasCompleteShippingAddress(user.id))) return { success: false, message: ADDRESS_REQUIRED_MESSAGE };
   const supabase = createSupabaseAdminClient();
   const current = ownedEstimate;
   if (current.status === "キャンセル") return { success: false, message: "キャンセルされた見積は決済できません。" };
