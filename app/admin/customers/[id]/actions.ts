@@ -23,6 +23,13 @@ function text(formData: FormData, name: string, maxLength: number) {
   return trimmed.length <= maxLength ? trimmed : null;
 }
 
+function nonNegativeMoney(value: FormDataEntryValue | null) {
+  if (value === "") return 0;
+  if (typeof value !== "string" || !/^\d{1,10}$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 export async function updateCustomer(
   _previousState: UpdateCustomerState,
   formData: FormData,
@@ -38,6 +45,7 @@ export async function updateCustomer(
   const prefecture = text(formData, "prefecture", 20);
   const addressLine1 = text(formData, "addressLine1", 200);
   const addressLine2 = text(formData, "addressLine2", 200);
+  const depositBalance = nonNegativeMoney(formData.get("depositBalance"));
 
   if (typeof customerId !== "string" || !UUID_PATTERN.test(customerId)) {
     return { success: false, message: "顧客IDが正しくありません。" };
@@ -46,6 +54,7 @@ export async function updateCustomer(
   if (!email || !EMAIL_PATTERN.test(email)) return { success: false, message: "正しいメールアドレスを入力してください。" };
   if (!phone || !postalCode || !prefecture || !addressLine1) return { success: false, message: "建物名・部屋番号以外の項目はすべて入力してください。" };
   if (company === null || addressLine2 === null) return { success: false, message: "入力内容が長すぎます。" };
+  if (depositBalance === null) return { success: false, message: "デポジット残高を正しく入力してください。" };
 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -59,6 +68,7 @@ export async function updateCustomer(
       prefecture,
       address_line1: addressLine1,
       address_line2: addressLine2 || null,
+      deposit_balance: depositBalance,
     })
     .eq("id", customerId)
     .select("id, auth_user_id")

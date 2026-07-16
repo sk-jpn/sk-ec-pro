@@ -21,12 +21,13 @@ type CustomerEstimate = {
   paid_at: string | null;
   payment_method: string;
   updated_at: string;
-  china_shipping_fee: number;
+  deposit: number;
   international_shipping_fee: number;
   agency_fee: number;
   other_fee: number;
   discount: number;
   tax: number;
+  tax_rate: number;
   estimate_items: { id: string; product_name: string | null; url: string; quantity: number; unit_price: number }[];
 };
 
@@ -50,7 +51,7 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
 
   const { data, error } = await supabase
     .from("estimates")
-    .select("estimate_no, status, approved_at, paid_at, payment_method, updated_at, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, estimate_items(id, product_name, url, quantity, unit_price)")
+    .select("estimate_no, status, approved_at, paid_at, payment_method, updated_at, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, estimate_items(id, product_name, url, quantity, unit_price)")
     .eq("estimate_no", estimateNumber)
     .maybeSingle();
 
@@ -58,7 +59,7 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
   if (!data) notFound();
   const estimate = data as unknown as CustomerEstimate;
   const totals = calculateQuoteTotals(estimate.estimate_items.map((item) => ({ quantity: item.quantity, unitPrice: item.unit_price })), {
-    chinaShippingFee: estimate.china_shipping_fee,
+    deposit: estimate.deposit,
     internationalShippingFee: estimate.international_shipping_fee,
     agencyFee: estimate.agency_fee,
     otherFee: estimate.other_fee,
@@ -68,10 +69,10 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
   const estimateDate = new Intl.DateTimeFormat("ja-JP", { dateStyle: "long", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(estimate.updated_at));
 
   const charges = [
-    ["中国国内送料", estimate.china_shipping_fee],
+    ["デポジット", estimate.deposit],
     ["国際送料", estimate.international_shipping_fee],
-    ["代行手数料", estimate.agency_fee],
-    ["その他費用", estimate.other_fee],
+    ["代行購入", estimate.agency_fee],
+    ["その他の費用（前回不足金等）", estimate.other_fee],
   ] as const;
 
   return (
@@ -104,7 +105,7 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
                 <p className="flex justify-between border-b border-slate-100 pb-3 text-sm"><span className="text-slate-500">商品合計</span><span className="font-semibold">{yen(totals.productTotal)}</span></p>
                 {charges.map(([label, value]) => <p key={label} className="flex justify-between text-sm"><span className="text-slate-500">{label}</span><span className="font-medium">{yen(value)}</span></p>)}
                 {estimate.discount > 0 && <p className="flex justify-between text-sm"><span className="text-slate-500">割引</span><span className="font-medium text-red-600">-{yen(estimate.discount)}</span></p>}
-                {estimate.tax > 0 && <p className="flex justify-between text-sm"><span className="text-slate-500">消費税</span><span className="font-medium">{yen(estimate.tax)}</span></p>}
+                <p className="flex justify-between text-sm"><span className="text-slate-500">消費税（{estimate.tax_rate}%）</span><span className="font-medium">{yen(estimate.tax)}</span></p>
                 <div className="mt-5 rounded-2xl bg-slate-950 px-6 py-5 text-white"><p className="text-xs text-slate-300">合計金額</p><p className="mt-2 text-right text-3xl font-bold tracking-tight">{yen(totals.total)}</p></div>
               </div>
 

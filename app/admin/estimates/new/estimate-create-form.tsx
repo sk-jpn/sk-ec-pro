@@ -29,7 +29,7 @@ export function EstimateCreateForm({ customers }: { customers: CustomerOption[] 
       <div className="grid gap-5 sm:grid-cols-2">
         <label className={`${fieldClass} sm:col-span-2`}>商品名<Input name={`productName_${index}`} maxLength={300} disabled={pending} /></label>
         <label className={`${fieldClass} sm:col-span-2`}>商品URL<Input name={`url_${index}`} type="url" maxLength={2_000} disabled={pending} /></label>
-        <label className={fieldClass}>数量<Input name={`quantity_${index}`} type="number" min={1} max={9_999_999_999} defaultValue={1} required disabled={pending} /></label>
+        <label className={fieldClass}>数量<Input name={`quantity_${index}`} type="number" min={1} max={9_999_999_999} defaultValue={1} required disabled={pending} className="no-number-spinner" /></label>
         <label className={fieldClass}>色<Input name={`color_${index}`} maxLength={200} disabled={pending} /></label>
         <label className={fieldClass}>サイズ<Input name={`size_${index}`} maxLength={200} disabled={pending} /></label>
         <label className={fieldClass}>型番<Input name={`model_${index}`} maxLength={200} disabled={pending} /></label>

@@ -4,7 +4,7 @@ export type QuoteCalculationItem = {
 };
 
 export type QuoteAdjustments = {
-  chinaShippingFee: number;
+  deposit: number;
   internationalShippingFee: number;
   agencyFee: number;
   otherFee: number;
@@ -17,7 +17,7 @@ export function calculateQuoteTotals(items: QuoteCalculationItem[], adjustments:
   const productTotal = subtotals.reduce((sum, subtotal) => sum + subtotal, 0);
   const total = Math.max(0,
     productTotal
-    + adjustments.chinaShippingFee
+    + adjustments.deposit
     + adjustments.internationalShippingFee
     + adjustments.agencyFee
     + adjustments.otherFee
@@ -26,4 +26,9 @@ export function calculateQuoteTotals(items: QuoteCalculationItem[], adjustments:
   );
 
   return { subtotals, productTotal, total };
+}
+
+export function calculateQuoteTax(taxableAmount: number, taxRate: number) {
+  if (![0, 8, 10].includes(taxRate)) return 0;
+  return Math.max(0, Math.floor(Math.max(0, taxableAmount) * taxRate / 100));
 }

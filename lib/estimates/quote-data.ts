@@ -8,12 +8,13 @@ type EstimateQuoteRow = {
   quote_issue_date: string;
   valid_until: string | null;
   payment_method: string;
-  china_shipping_fee: number;
+  deposit: number;
   international_shipping_fee: number;
   agency_fee: number;
   other_fee: number;
   discount: number;
   tax: number;
+  tax_rate: number;
   customers: { name: string; email: string; prefecture: string } | null;
   estimate_items: { product_name: string | null; url: string; quantity: number; unit_price: number; estimate_item_images: { storage_path: string; sort_order: number }[] }[];
 };
@@ -22,7 +23,7 @@ export async function getEstimateQuoteData(estimateId: string): Promise<Estimate
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("estimate_no, quote_issue_date, valid_until, payment_method, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, customers(name, email, prefecture), estimate_items(product_name, url, quantity, unit_price, estimate_item_images(storage_path, sort_order))")
+    .select("estimate_no, quote_issue_date, valid_until, payment_method, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, customers(name, email, prefecture), estimate_items(product_name, url, quantity, unit_price, estimate_item_images(storage_path, sort_order))")
     .eq("id", estimateId)
     .maybeSingle();
 
@@ -49,12 +50,13 @@ export async function getEstimateQuoteData(estimateId: string): Promise<Estimate
     customerEmail: estimate.customers.email,
     prefecture: estimate.customers.prefecture,
     items,
-    chinaShippingFee: estimate.china_shipping_fee,
+    deposit: estimate.deposit,
     internationalShippingFee: estimate.international_shipping_fee,
     agencyFee: estimate.agency_fee,
     otherFee: estimate.other_fee,
     discount: estimate.discount,
     tax: estimate.tax,
+    taxRate: estimate.tax_rate,
     paymentMethod: estimate.payment_method,
     validUntil: estimate.valid_until,
   };

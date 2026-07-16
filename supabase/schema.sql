@@ -14,6 +14,7 @@ create table if not exists public.customers (
   prefecture text not null,
   address_line1 text,
   address_line2 text,
+  deposit_balance integer not null default 0 check (deposit_balance >= 0),
   auth_user_id uuid references auth.users(id) on delete set null
 );
 
@@ -31,11 +32,13 @@ create table if not exists public.estimates (
   payment_fee integer not null default 0 check (payment_fee >= 0),
   stripe_checkout_session_id text,
   china_shipping_fee integer not null default 0 check (china_shipping_fee >= 0),
+  deposit integer not null default 0 check (deposit >= 0),
   international_shipping_fee integer not null default 0 check (international_shipping_fee >= 0),
   agency_fee integer not null default 0 check (agency_fee >= 0),
   other_fee integer not null default 0 check (other_fee >= 0),
   discount integer not null default 0 check (discount >= 0),
   tax integer not null default 0 check (tax >= 0),
+  tax_rate integer not null default 0 check (tax_rate in (0, 8, 10)),
   shipping_method text,
   remarks text,
   created_at timestamptz not null default now(),
@@ -52,11 +55,13 @@ alter table public.estimates add column if not exists payment_method text not nu
 alter table public.estimates add column if not exists payment_fee integer not null default 0;
 alter table public.estimates add column if not exists stripe_checkout_session_id text;
 alter table public.estimates add column if not exists china_shipping_fee integer not null default 0;
+alter table public.estimates add column if not exists deposit integer not null default 0;
 alter table public.estimates add column if not exists international_shipping_fee integer not null default 0;
 alter table public.estimates add column if not exists agency_fee integer not null default 0;
 alter table public.estimates add column if not exists other_fee integer not null default 0;
 alter table public.estimates add column if not exists discount integer not null default 0;
 alter table public.estimates add column if not exists tax integer not null default 0;
+alter table public.estimates add column if not exists tax_rate integer not null default 0;
 alter table public.estimates drop constraint if exists estimates_status_check;
 alter table public.estimates alter column status set default '新規';
 update public.estimates

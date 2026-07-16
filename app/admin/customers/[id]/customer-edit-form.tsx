@@ -19,6 +19,7 @@ type CustomerEditValues = {
   prefecture: string;
   addressLine1: string;
   addressLine2: string;
+  depositBalance: number;
 };
 
 export function CustomerEditForm({ customer }: { customer: CustomerEditValues }) {
@@ -60,6 +61,11 @@ export function CustomerEditForm({ customer }: { customer: CustomerEditValues })
         <label className={`${labelClass} sm:col-span-2`}>
           建物名・部屋番号
           <Input name="addressLine2" defaultValue={customer.addressLine2} maxLength={200} disabled={pending} />
+        </label>
+        <label className={`${labelClass} sm:col-span-2`}>
+          デポジット残高
+          <Input name="depositBalance" type="number" min={0} max={9_999_999_999} defaultValue={customer.depositBalance || ""} className="no-number-spinner sm:max-w-xs" disabled={pending} />
+          <span className="text-xs font-normal leading-5 text-slate-400">多めに入金された金額の残高を記録します。</span>
         </label>
       </div>
       <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">

@@ -15,6 +15,13 @@ function value(formData: FormData, name: string, maxLength: number) {
   return trimmed.length <= maxLength ? trimmed : null;
 }
 
+function nonNegativeMoney(entry: FormDataEntryValue | null) {
+  if (entry === "") return 0;
+  if (typeof entry !== "string" || !/^\d{1,10}$/.test(entry)) return null;
+  const parsed = Number(entry);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
 export async function createCustomer(_state: CreateCustomerState, formData: FormData): Promise<CreateCustomerState> {
   await requireAdminUser();
   const name = value(formData, "name", 100);
@@ -25,10 +32,12 @@ export async function createCustomer(_state: CreateCustomerState, formData: Form
   const prefecture = value(formData, "prefecture", 20);
   const addressLine1 = value(formData, "addressLine1", 200);
   const addressLine2 = value(formData, "addressLine2", 200);
+  const depositBalance = nonNegativeMoney(formData.get("depositBalance"));
 
   if (!name) return { success: false, message: "氏名を入力してください。" };
   if (!email || !EMAIL_PATTERN.test(email)) return { success: false, message: "正しいメールアドレスを入力してください。" };
   if ([company, phone, postalCode, prefecture, addressLine1, addressLine2].some((entry) => entry === null)) return { success: false, message: "入力内容を確認してください。" };
+  if (depositBalance === null) return { success: false, message: "デポジット残高を正しく入力してください。" };
 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("customers").insert({
@@ -40,6 +49,7 @@ export async function createCustomer(_state: CreateCustomerState, formData: Form
     prefecture: prefecture || "",
     address_line1: addressLine1 || null,
     address_line2: addressLine2 || null,
+    deposit_balance: depositBalance,
   }).select("id").single();
   if (error) {
     console.error("手動顧客登録に失敗しました。", error);

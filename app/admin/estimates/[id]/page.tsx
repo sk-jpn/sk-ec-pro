@@ -28,17 +28,18 @@ type EstimateDetail = {
   valid_until: string | null;
   payment_method: string;
   payment_fee: number;
-  china_shipping_fee: number;
+  deposit: number;
   international_shipping_fee: number;
   agency_fee: number;
   other_fee: number;
   discount: number;
   tax: number;
+  tax_rate: number;
   shipping_method: string | null;
   remarks: string | null;
   created_at: string;
   updated_at: string;
-  customers: { name: string; company: string | null; email: string; phone: string | null; prefecture: string } | null;
+  customers: { name: string; company: string | null; email: string; phone: string | null; prefecture: string; deposit_balance: number } | null;
   estimate_items: { id: string; url: string; product_name: string | null; quantity: number; unit_price: number; color: string | null; size: string | null; model: string | null; request: string; estimate_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[]; received_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[] }[];
 };
 
@@ -47,7 +48,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, shipping_method, remarks, created_at, updated_at, customers(name, company, email, phone, prefecture), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
+    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, shipping_method, remarks, created_at, updated_at, customers(name, company, email, phone, prefecture, deposit_balance), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
     .eq("id", id)
     .maybeSingle();
 
@@ -77,12 +78,13 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
           quoteIssueDate={estimate.quote_issue_date}
           validUntil={estimate.valid_until ?? ""}
           paymentMethod={estimate.payment_method}
-          chinaShippingFee={estimate.china_shipping_fee}
+          deposit={estimate.deposit}
+          customerDepositBalance={customer?.deposit_balance ?? 0}
           internationalShippingFee={estimate.international_shipping_fee}
           agencyFee={estimate.agency_fee}
           otherFee={estimate.other_fee}
           discount={estimate.discount}
-          tax={estimate.tax}
+          taxRate={estimate.tax_rate}
           items={estimate.estimate_items.map((item) => ({ id: item.id, url: item.url, productName: item.product_name ?? "", quantity: item.quantity, unitPrice: item.unit_price }))}
         />
         {estimate.payment_method === PAYMENT_METHODS.bankTransfer && (estimate.approved_at || estimate.paid_at) && <BankPaymentButton estimateId={estimate.id} paidAt={estimate.paid_at} />}

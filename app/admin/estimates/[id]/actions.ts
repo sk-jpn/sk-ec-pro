@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getEstimateQuoteData } from "@/lib/estimates/quote-data";
+import { calculateQuoteTax } from "@/lib/estimates/quote-calculations";
 import { generateEstimatePdf } from "@/lib/pdf/estimate-pdf";
 import { PAYMENT_METHODS } from "@/config/payment";
 import { requireAdminUser } from "@/lib/auth/require-admin";
@@ -151,6 +152,7 @@ export async function deleteEstimateItemImage(formData: FormData) {
 }
 
 function money(value: FormDataEntryValue | null) {
+  if (value === "") return 0;
   if (typeof value !== "string" || !/^\d{1,10}$/.test(value)) return null;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) ? parsed : null;
@@ -205,7 +207,8 @@ export async function updateEstimateQuote(
   const validUntil = formData.get("validUntil");
   const paymentMethod = formData.get("paymentMethod");
   const saveMode = formData.get("saveMode");
-  const feeNames = ["chinaShippingFee", "internationalShippingFee", "agencyFee", "otherFee", "discount", "tax"] as const;
+  const rawTaxRate = formData.get("taxRate");
+  const feeNames = ["deposit", "internationalShippingFee", "agencyFee", "otherFee", "discount"] as const;
   const fees = feeNames.map((name) => money(formData.get(name)));
 
   if (typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId)) {
@@ -223,6 +226,8 @@ export async function updateEstimateQuote(
   if (typeof paymentMethod !== "string" || paymentMethod.trim().length < 1 || paymentMethod.length > 100 || fees.some((value) => value === null)) {
     return { success: false, message: "金額と支払方法を確認してください。" };
   }
+  const taxRate = typeof rawTaxRate === "string" ? Number(rawTaxRate) : NaN;
+  if (![0, 8, 10].includes(taxRate)) return { success: false, message: "消費税率を確認してください。" };
 
   const items = itemIds.map((entry) => {
     const id = String(entry);
@@ -245,17 +250,22 @@ export async function updateEstimateQuote(
     return { success: false, message: "商品情報を確認できませんでした。" };
   }
 
-  const [chinaShippingFee, internationalShippingFee, agencyFee, otherFee, discount, tax] = fees as number[];
+  const [deposit, internationalShippingFee, agencyFee, otherFee, discount] = fees as number[];
+  const taxableAmount = items.reduce((sum, item) => sum + (item.quantity ?? 0) * (item.unitPrice ?? 0), 0)
+    + deposit + internationalShippingFee + agencyFee + otherFee - discount;
+  const tax = calculateQuoteTax(taxableAmount, taxRate);
   const { error: estimateError } = await supabase.from("estimates").update({
     quote_issue_date: issueDate,
     valid_until: validUntil || null,
     payment_method: paymentMethod.trim(),
-    china_shipping_fee: chinaShippingFee,
+    china_shipping_fee: 0,
+    deposit,
     international_shipping_fee: internationalShippingFee,
     agency_fee: agencyFee,
     other_fee: otherFee,
     discount,
     tax,
+    tax_rate: taxRate,
   }).eq("id", estimateId);
   if (estimateError) {
     console.error("見積金額の更新に失敗しました。", estimateError);
@@ -273,44 +283,39 @@ export async function updateEstimateQuote(
     return { success: false, message: "商品情報を保存できませんでした。" };
   }
 
-  let accountGuideSent = false;
   if (saveMode === "complete") {
-    const { data: accountTarget, error: accountTargetError } = await supabase
-      .from("estimates")
-      .select("estimate_no, customers(name, email, auth_user_id)")
-      .eq("id", estimateId)
-      .maybeSingle();
-    if (accountTargetError || !accountTarget) {
-      console.error("顧客アカウント連携状況を確認できませんでした。", accountTargetError);
-      return { success: false, message: "見積内容は保存されましたが、顧客アカウントの状態を確認できませんでした。" };
-    }
-    const customer = accountTarget.customers as unknown as { name: string; email: string; auth_user_id: string | null } | null;
-    if (!customer) return { success: false, message: "見積内容は保存されましたが、顧客情報を確認できませんでした。" };
-    {
+    try {
       const apiKey = process.env.RESEND_API_KEY;
       const from = process.env.RESEND_FROM_EMAIL;
-      if (!apiKey || !from) return { success: false, message: "見積内容は保存されましたが、マイページ案内メールの設定が完了していません。" };
+      if (!apiKey || !from) return { success: false, message: "見積内容は保存されましたが、メール送信設定が完了していません。" };
+      const estimate = await getEstimateQuoteData(estimateId);
+      if (!estimate) return { success: false, message: "見積内容は保存されましたが、見積データを取得できませんでした。" };
+      const pdf = await generateEstimatePdf(estimate, { logoPath: join(process.cwd(), "public", "brand", "sk-ec-pro-logo.png") });
       const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
       const siteOrigin = new URL(process.env.SITE_URL || "https://formosajapan.com").origin;
       const loginUrl = `${siteOrigin}/ec/login?next=/account`;
+      const approvalUrl = `${siteOrigin}/ec/estimate/${estimate.estimateNo}`;
       const resend = new Resend(apiKey);
-      const { error: guideError } = await resend.emails.send({
+      const { error: sendError } = await resend.emails.send({
         from: sender,
-        to: [customer.email],
+        to: [estimate.customerEmail],
         replyTo: from,
-        subject: `【SK EC Pro】マイページ登録・ログインのご案内 ${accountTarget.estimate_no}`,
-        text: `${customer.name} 様\n\nお見積 ${accountTarget.estimate_no} の確認準備が整いました。\n見積内容の確認・承認には、下記よりGoogleログインをご利用ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\nこのメールの送信先「${customer.email}」と同じメールアドレスが登録されたGoogleアカウントでログインしてください。\n初回ログインの場合はアカウントが作成され、見積データが自動的にマイページへ連携されます。登録済みの場合は、そのままマイページへログインできます。\n\nGoogleアカウントを利用しない場合は、引き続きメールでご案内いたします。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
+        subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,
+        text: `${estimate.customerName} 様\n\nお見積 ${estimate.estimateNo} が完成しました。\n添付のPDFをご確認のうえ、マイページから見積内容をご承認ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\n見積確認・承認ページ:\n${approvalUrl}\n\nこのメールの送信先「${estimate.customerEmail}」と同じメールアドレスが登録されたGoogleアカウントでログインしてください。\n初回ログインの場合はアカウントが作成され、見積データが自動的にマイページへ連携されます。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
+        attachments: [{ filename: `estimate-${estimate.estimateNo}.pdf`, content: pdf }],
       });
-      if (guideError) {
-        console.error("マイページ案内メールの送信に失敗しました。", guideError);
-        return { success: false, message: "見積内容は保存されましたが、マイページ案内メールを送信できませんでした。" };
+      if (sendError) {
+        console.error("見積完了メールの送信に失敗しました。", sendError);
+        return { success: false, message: "見積内容は保存されましたが、PDF付き見積メールを送信できませんでした。" };
       }
-      accountGuideSent = true;
+    } catch (error) {
+      console.error("見積完了メールの作成に失敗しました。", error);
+      return { success: false, message: "見積内容は保存されましたが、PDF付き見積メールを作成できませんでした。" };
     }
   }
 
   const nextStatus = saveMode === "complete" ? "お客様確認中" : "見積作成中";
-  const eligibleStatuses = saveMode === "complete" ? ["新規", "見積作成中"] : ["新規"];
+  const eligibleStatuses = saveMode === "complete" ? ["新規", "見積作成中", "お客様確認中"] : ["新規"];
   const { error: statusError } = await supabase
     .from("estimates")
     .update({ status: nextStatus })
@@ -324,50 +329,8 @@ export async function updateEstimateQuote(
   revalidatePath("/admin/estimates");
   revalidatePath(`/admin/estimates/${estimateId}`);
   return saveMode === "complete"
-    ? { success: true, message: accountGuideSent ? "見積内容を保存し、マイページ案内メールを送信してお客様確認中へ更新しました。" : "見積内容を保存し、お客様確認中へ更新しました。" }
+    ? { success: true, message: "見積内容を保存し、PDF付き見積メールを送信してお客様確認中へ更新しました。" }
     : { success: true, message: "見積内容を一時保存しました。" };
-}
-
-export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuoteState> {
-  await requireAdminUser();
-  if (!UUID_PATTERN.test(estimateId)) return { success: false, message: "見積IDが正しくありません。" };
-
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) return { success: false, message: "メール送信設定が完了していません。" };
-  const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
-
-  try {
-    const statusClient = createSupabaseAdminClient();
-    const { data: statusEstimate, error: statusCheckError } = await statusClient.from("estimates").select("status").eq("id", estimateId).maybeSingle();
-    if (statusCheckError || !statusEstimate) return { success: false, message: "見積の状態を確認できませんでした。" };
-    if (statusEstimate.status !== "お客様確認中") return { success: false, message: "お客様確認中の案件のみお客様へ送信できます。" };
-    const estimate = await getEstimateQuoteData(estimateId);
-    if (!estimate) return { success: false, message: "見積が見つかりません。" };
-    const pdf = await generateEstimatePdf(estimate, { logoPath: join(process.cwd(), "public", "brand", "sk-ec-pro-logo.png") });
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      from: sender,
-      to: [estimate.customerEmail],
-      replyTo: from,
-      subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,
-      text: `${estimate.customerName} 様\n\nご依頼いただきましたお見積書をお送りします。\n添付のPDFをご確認のうえ、下記ページからご承認ください。\n\nマイページ登録・ログイン:\nhttps://formosajapan.com/ec/login?next=/account\n\n見積確認・承認ページ:\nhttps://formosajapan.com/ec/estimate/${estimate.estimateNo}\n\nこのメールの送信先と同じメールアドレスが登録されたGoogleアカウントでログインすると、見積データがマイページへ連携されます。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
-      attachments: [{ filename: `estimate-${estimate.estimateNo}.pdf`, content: pdf }],
-    });
-    if (error) throw new Error(error.message);
-
-    const supabase = createSupabaseAdminClient();
-    const { error: statusError } = await supabase.from("estimates").update({ status: "お客様確認中" }).eq("id", estimateId);
-    if (statusError) console.error("見積送信後のステータス更新に失敗しました。", statusError);
-
-    revalidatePath("/admin/estimates");
-    revalidatePath(`/admin/estimates/${estimateId}`);
-    revalidatePath(`/ec/status/${estimate.estimateNo}`);
-    return { success: true, message: `${estimate.customerEmail} へ見積書を送信しました。` };
-  } catch (error) {
-    console.error("見積書メールの送信に失敗しました。", error);
-    return { success: false, message: "見積書を送信できませんでした。" };
-  }
 }
 
 export async function confirmBankPayment(

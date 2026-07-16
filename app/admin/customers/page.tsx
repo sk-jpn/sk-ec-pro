@@ -19,6 +19,7 @@ type CustomerRow = {
   prefecture: string;
   address_line1: string | null;
   address_line2: string | null;
+  deposit_balance: number;
   created_at: string;
   auth_user_id: string | null;
   estimates: { count: number }[];
@@ -37,7 +38,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("customers")
-    .select("id, name, company, email, postal_code, prefecture, address_line1, address_line2, created_at, auth_user_id, estimates(count)")
+    .select("id, name, company, email, postal_code, prefecture, address_line1, address_line2, deposit_balance, created_at, auth_user_id, estimates(count)")
     .order("created_at", { ascending: false });
   if (error) throw new Error(`顧客一覧の取得に失敗しました: ${error.message}`);
   const { data: pendingData, error: pendingError } = await supabase
@@ -79,12 +80,13 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
         </form>
         {customers.length === 0 ? <p className="p-10 text-center text-sm text-slate-400">該当する顧客データはありません。</p> : (
           <Table>
-            <TableHeader><TableRow><TableHead>顧客名</TableHead><TableHead>連絡用メール</TableHead><TableHead>お届け先住所</TableHead><TableHead>見積件数</TableHead><TableHead>マイページ</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>顧客名</TableHead><TableHead>連絡用メール</TableHead><TableHead>お届け先住所</TableHead><TableHead>デポジット残高</TableHead><TableHead>見積件数</TableHead><TableHead>マイページ</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>{customers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell className="font-medium">{customer.name}{customer.company && <span className="mt-1 block text-xs font-normal text-slate-400">{customer.company}</span>}</TableCell>
                 <TableCell className="text-slate-500">{customer.email}</TableCell>
                 <TableCell><span className="block">{customer.postal_code ? `〒${customer.postal_code}` : "未登録"}</span>{customer.address_line1 && <span className="mt-1 block max-w-72 whitespace-normal text-xs text-slate-500">{customer.prefecture}{customer.address_line1}{customer.address_line2 ? ` ${customer.address_line2}` : ""}</span>}</TableCell>
+                <TableCell><span className={customer.deposit_balance > 0 ? "font-semibold text-blue-700" : "text-slate-400"}>¥{new Intl.NumberFormat("ja-JP").format(customer.deposit_balance)}</span></TableCell>
                 <TableCell><Badge variant="secondary">{customer.estimates?.[0]?.count ?? 0}件</Badge></TableCell>
                 <TableCell>{customer.auth_user_id ? <Badge>連携済み</Badge> : <Badge variant="outline">未連携</Badge>}</TableCell>
                 <TableCell className="text-right"><Button variant="outline" size="sm" asChild><Link href={`/admin/customers/${customer.id}`}><Pencil size={14} />編集</Link></Button></TableCell>

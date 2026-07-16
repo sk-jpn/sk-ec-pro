@@ -5,11 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { requireCustomerUser } from "@/lib/auth/require-customer";
 import { customerStatusLabel, date, estimateTotal, yen } from "@/lib/account/presentation";
 
-type Estimate = { id: string; estimate_no: string; created_at: string; status: string; china_shipping_fee: number; international_shipping_fee: number; agency_fee: number; other_fee: number; discount: number; tax: number; estimate_items: { quantity: number; unit_price: number }[] };
+type Estimate = { id: string; estimate_no: string; created_at: string; status: string; deposit: number; international_shipping_fee: number; agency_fee: number; other_fee: number; discount: number; tax: number; estimate_items: { quantity: number; unit_price: number }[] };
 
 export default async function AccountEstimatesPage() {
   const { user, supabase } = await requireCustomerUser();
-  const { data, error } = await supabase.from("estimates").select("id, estimate_no, created_at, status, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, estimate_items(quantity, unit_price), customers!inner(auth_user_id)").eq("customers.auth_user_id", user.id).order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("estimates").select("id, estimate_no, created_at, status, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, estimate_items(quantity, unit_price), customers!inner(auth_user_id)").eq("customers.auth_user_id", user.id).order("created_at", { ascending: false });
   if (error) throw new Error(`見積一覧を取得できませんでした: ${error.message}`);
   const estimates = data as unknown as Estimate[];
   return <><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-600">Estimates</p><h1 className="mt-2 text-3xl font-bold tracking-tight">見積一覧</h1><p className="mt-3 text-sm text-slate-500">これまでのお見積と現在の状況を確認できます。</p>

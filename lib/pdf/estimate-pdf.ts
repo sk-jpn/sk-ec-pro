@@ -18,12 +18,13 @@ export type EstimatePdfData = {
   customerEmail: string;
   prefecture: string;
   items: EstimatePdfItem[];
-  chinaShippingFee: number;
+  deposit: number;
   internationalShippingFee: number;
   agencyFee: number;
   otherFee: number;
   discount: number;
   tax: number;
+  taxRate: number;
   paymentMethod: string;
   validUntil: string | null;
 };
@@ -145,12 +146,12 @@ export async function generateEstimatePdf(data: EstimatePdfData, options: Estima
   const summaryWidth = right - summaryX;
   const totals = [
     ["商品合計", productTotal],
-    ["中国国内送料", data.chinaShippingFee],
+    ["デポジット", data.deposit],
     ["国際送料", data.internationalShippingFee],
-    ["代行手数料", data.agencyFee],
-    ["その他", data.otherFee],
+    ["代行購入", data.agencyFee],
+    ["その他の費用（前回不足金等）", data.otherFee],
     ["割引", -data.discount],
-    ["消費税", data.tax],
+    [`消費税（${data.taxRate}%）`, data.tax],
   ] as const;
   totals.forEach(([label, value]) => {
     doc.font("NotoSansJP").fontSize(8.5).fillColor(COLORS.muted).text(label, summaryX, y + 5, { width: 115 });

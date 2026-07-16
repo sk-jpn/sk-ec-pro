@@ -21,6 +21,16 @@ body {
 }
 ::selection { background: #dbeafe; color: #1d4ed8; }
 
+.no-number-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.no-number-spinner::-webkit-inner-spin-button,
+.no-number-spinner::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 .hero-glow {
   background:
     radial-gradient(circle at 78% 43%, rgba(96, 165, 250, .20), transparent 24%),
