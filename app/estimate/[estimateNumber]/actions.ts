@@ -5,6 +5,7 @@ import { PAYMENT_METHODS, calculateCardPaymentFee } from "@/config/payment";
 import { calculateQuoteTotals } from "@/lib/estimates/quote-calculations";
 import { getEstimateQuoteData } from "@/lib/estimates/quote-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireCustomerUser } from "@/lib/auth/require-customer";
 import { getStripeClient } from "@/lib/stripe/client";
 
 export type ApproveEstimateState = {
@@ -23,11 +24,14 @@ export async function approveEstimate(
   if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) return { success: false, message: "見積番号が正しくありません。" };
   if (paymentMethod !== PAYMENT_METHODS.bankTransfer) return { success: false, message: "支払方法が正しくありません。" };
 
+  const { supabase: customerClient } = await requireCustomerUser();
+  const { data: ownedEstimate } = await customerClient.from("estimates").select("id, status, approved_at").eq("estimate_no", estimateNumber).maybeSingle();
+  if (!ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
     .update({ status: "approved", approved_at: new Date().toISOString(), payment_method: PAYMENT_METHODS.bankTransfer, payment_fee: 0, stripe_checkout_session_id: null })
-    .eq("estimate_no", estimateNumber)
+    .eq("id", ownedEstimate.id)
     .is("approved_at", null)
     .neq("status", "approved")
     .neq("status", "キャンセル")
@@ -59,13 +63,15 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
   const normalizedNumber = estimateNumber.trim().toUpperCase();
   if (!/^SK\d{6}-\d{4}$/.test(normalizedNumber)) return { success: false, message: "見積番号が正しくありません。" };
 
-  const supabase = createSupabaseAdminClient();
-  const { data: current, error: currentError } = await supabase
+  const { supabase: customerClient } = await requireCustomerUser();
+  const { data: ownedEstimate, error: ownershipError } = await customerClient
     .from("estimates")
     .select("id, status, approved_at, paid_at")
     .eq("estimate_no", normalizedNumber)
     .maybeSingle();
-  if (currentError || !current) return { success: false, message: "見積情報を確認できませんでした。" };
+  if (ownershipError || !ownedEstimate) return { success: false, message: "見積情報を確認できませんでした。" };
+  const supabase = createSupabaseAdminClient();
+  const current = ownedEstimate;
   if (current.status === "キャンセル") return { success: false, message: "キャンセルされた見積は決済できません。" };
   if (current.status === "paid" || current.paid_at) return { success: false, message: "この見積は入金済みです。" };
 

@@ -3,7 +3,7 @@ import { FileCheck2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/app/components/site-chrome";
 import { calculateQuoteTotals } from "@/lib/estimates/quote-calculations";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireCustomerUser } from "@/lib/auth/require-customer";
 import { PaymentPanel } from "./payment-panel";
 
 export const dynamic = "force-dynamic";
@@ -43,11 +43,11 @@ function itemName(item: CustomerEstimate["estimate_items"][number]) {
 }
 
 export default async function CustomerEstimatePage({ params }: PageProps<"/estimate/[estimateNumber]">) {
+  const { supabase } = await requireCustomerUser();
   const { estimateNumber: rawEstimateNumber } = await params;
   const estimateNumber = rawEstimateNumber.trim().toUpperCase();
   if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) notFound();
 
-  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
     .select("estimate_no, status, approved_at, paid_at, payment_method, updated_at, china_shipping_fee, international_shipping_fee, agency_fee, other_fee, discount, tax, estimate_items(id, product_name, url, quantity, unit_price)")
