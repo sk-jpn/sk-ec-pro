@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus, Search } from "lucide-react";
+import { Clock3, Pencil, Plus, Search } from "lucide-react";
 import { PageHeader } from "../admin-ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,12 @@ type CustomerRow = {
   estimates: { count: number }[];
 };
 
+type PendingAccount = {
+  auth_user_id: string;
+  google_email: string;
+  created_at: string;
+};
+
 export default async function CustomersPage({ searchParams }: PageProps<"/admin/customers">) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q.trim().toLowerCase() : "";
@@ -34,6 +40,12 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
     .select("id, name, company, email, postal_code, prefecture, address_line1, address_line2, created_at, auth_user_id, estimates(count)")
     .order("created_at", { ascending: false });
   if (error) throw new Error(`顧客一覧の取得に失敗しました: ${error.message}`);
+  const { data: pendingData, error: pendingError } = await supabase
+    .from("pending_customer_links")
+    .select("auth_user_id, google_email, created_at")
+    .order("created_at", { ascending: false });
+  if (pendingError) throw new Error(`連携確認待ちアカウントの取得に失敗しました: ${pendingError.message}`);
+  const pendingAccounts = (pendingData ?? []) as PendingAccount[];
   const customers = ((data ?? []) as unknown as CustomerRow[]).filter((customer) =>
     !query ||
     customer.name.toLowerCase().includes(query) ||
@@ -48,6 +60,15 @@ export default async function CustomersPage({ searchParams }: PageProps<"/admin/
       action={<Button asChild><Link href="/admin/customers/new"><Plus size={16} />新規顧客</Link></Button>}
     />
     {deleted && <p role="status" className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">顧客と関連データを削除しました。</p>}
+    {pendingAccounts.length > 0 && <Card className="mb-6 border-amber-200">
+      <CardContent className="p-0">
+        <div className="flex items-center gap-3 border-b border-amber-100 bg-amber-50 px-5 py-4"><Clock3 className="text-amber-700" size={19} /><div><p className="font-semibold text-amber-950">連携確認待ちアカウント</p><p className="mt-1 text-xs text-amber-700">Google認証メールが顧客登録メールと一致しなかったアカウントです。</p></div><Badge variant="warning" className="ml-auto">{pendingAccounts.length}件</Badge></div>
+        <Table>
+          <TableHeader><TableRow><TableHead>Google認証メール</TableHead><TableHead>受付日時</TableHead><TableHead>状態</TableHead></TableRow></TableHeader>
+          <TableBody>{pendingAccounts.map((pending) => <TableRow key={pending.auth_user_id}><TableCell className="font-medium">{pending.google_email}</TableCell><TableCell>{new Intl.DateTimeFormat("ja-JP", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(pending.created_at))}</TableCell><TableCell><Badge variant="warning">連携確認待ち</Badge></TableCell></TableRow>)}</TableBody>
+        </Table>
+      </CardContent>
+    </Card>}
     <Card>
       <CardContent className="p-0">
         <form className="border-b border-slate-200 p-4">

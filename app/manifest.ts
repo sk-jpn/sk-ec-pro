@@ -13,8 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#2563eb",
     lang: "ja",
     icons: [
-      { src: `${BASE_PATH}/icon.png`, sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: `${BASE_PATH}/apple-icon.png`, sizes: "180x180", type: "image/png", purpose: "any" },
+      { src: `${BASE_PATH}/brand/sk-ec-pro-logo.png`, sizes: "1536x1024", type: "image/png", purpose: "any" },
     ],
   };
 }

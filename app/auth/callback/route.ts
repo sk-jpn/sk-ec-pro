@@ -48,13 +48,26 @@ export async function GET(request: Request) {
     const customerError = linkedError ?? emailError;
     const hasCustomerAccount = !customerError && (Boolean(linkedCustomer) || hasLegacyEmailMatch);
 
-    if (!hasCustomerAccount) {
-      if (customerError) console.error("Googleログイン対象の顧客確認に失敗しました。", customerError);
+    if (customerError) {
+      console.error("Googleログイン対象の顧客確認に失敗しました。", customerError);
       await supabase.auth.signOut();
-      const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-      if (deleteError) console.error("未登録GoogleユーザーのAuth削除に失敗しました。", deleteError);
-      return NextResponse.redirect(new URL(withBasePath("/account-not-found"), requestUrl.origin));
+      return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=oauth`, requestUrl.origin));
     }
+    if (!hasCustomerAccount) {
+      const { error: pendingError } = await admin.from("pending_customer_links").upsert({
+        auth_user_id: user.id,
+        google_email: normalizedEmail ?? "",
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "auth_user_id" });
+      if (pendingError) {
+        console.error("連携確認待ちアカウントの保存に失敗しました。", pendingError);
+        await supabase.auth.signOut();
+        return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=configuration`, requestUrl.origin));
+      }
+      return NextResponse.redirect(new URL(withBasePath("/account-link-pending"), requestUrl.origin));
+    }
+    await admin.from("pending_customer_links").delete().eq("auth_user_id", user.id);
   }
 
   const forwardedHost = request.headers.get("x-forwarded-host");

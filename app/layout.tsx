@@ -33,16 +33,16 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "SK EC Pro",
     locale: "ja_JP",
-    images: [{ url: `${BASE_PATH}/opengraph-image.png`, width: 1200, height: 630, alt: "SK EC Pro" }],
+    images: [{ url: `${BASE_PATH}/brand/sk-ec-pro-logo.png`, width: 1536, height: 1024, alt: "SK EC Pro" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "SK EC Pro | 中国EC購入代行・輸入サポート",
     description: "Taobao、1688など中国EC商品の購入から日本への配送まで、Formosa Japanがサポートします。",
-    images: [`${BASE_PATH}/opengraph-image.png`],
+    images: [`${BASE_PATH}/brand/sk-ec-pro-logo.png`],
   },
   alternates: { canonical: SITE_URL },
-  icons: { icon: `${BASE_PATH}/icon.png`, apple: `${BASE_PATH}/apple-icon.png` },
+  icons: { icon: `${BASE_PATH}/brand/sk-ec-pro-logo.png`, apple: `${BASE_PATH}/brand/sk-ec-pro-logo.png` },
   manifest: `${BASE_PATH}/manifest.webmanifest`,
 };
 

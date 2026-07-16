@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminUser } from "@/lib/auth/require-admin";
-import { ESTIMATE_IMAGE_BUCKET } from "@/lib/estimates/image-files";
+import { deleteCustomerData } from "@/lib/customers/delete-customer-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type UpdateCustomerState = {
@@ -107,70 +107,11 @@ export async function deleteCustomer(
     return { success: false, message: "確認欄に「顧客データを削除する」と入力してください。" };
   }
 
-  const supabase = createSupabaseAdminClient();
-  const { data: customer, error: customerReadError } = await supabase
-    .from("customers")
-    .select("id, auth_user_id")
-    .eq("id", customerId)
-    .maybeSingle();
-  if (customerReadError || !customer) {
-    console.error("削除対象の顧客情報を取得できませんでした。", customerReadError);
-    return { success: false, message: "削除対象の顧客が見つかりません。" };
-  }
-
-  const { data: estimates, error: estimateReadError } = await supabase.from("estimates").select("id").eq("customer_id", customerId);
-  if (estimateReadError) return { success: false, message: "顧客の見積データを確認できませんでした。" };
-  const estimateIds = (estimates ?? []).map((estimate) => estimate.id);
-  let storagePaths: string[] = [];
-
-  if (estimateIds.length) {
-    const { data: items, error: itemReadError } = await supabase.from("estimate_items").select("id").in("estimate_id", estimateIds);
-    if (itemReadError) return { success: false, message: "顧客の商品データを確認できませんでした。" };
-    const itemIds = (items ?? []).map((item) => item.id);
-    if (itemIds.length) {
-      const [{ data: estimateImages, error: estimateImageError }, { data: receivedImages, error: receivedImageError }] = await Promise.all([
-        supabase.from("estimate_item_images").select("storage_path").in("estimate_item_id", itemIds),
-        supabase.from("received_item_images").select("storage_path").in("estimate_item_id", itemIds),
-      ]);
-      if (estimateImageError || receivedImageError) return { success: false, message: "顧客の画像データを確認できませんでした。" };
-      storagePaths = [...(estimateImages ?? []), ...(receivedImages ?? [])].map((image) => image.storage_path);
-    }
-  }
-
-  const { error: orderDeleteError } = await supabase.from("orders").delete().eq("customer_id", customerId);
-  if (orderDeleteError) {
-    console.error("顧客の注文データを削除できませんでした。", orderDeleteError);
-    return { success: false, message: "注文データを削除できませんでした。" };
-  }
-  if (estimateIds.length) {
-    const { error: estimateDeleteError } = await supabase.from("estimates").delete().in("id", estimateIds);
-    if (estimateDeleteError) {
-      console.error("顧客の見積データを削除できませんでした。", estimateDeleteError);
-      return { success: false, message: "見積データを削除できませんでした。" };
-    }
-  }
-  const { error: customerDeleteError } = await supabase.from("customers").delete().eq("id", customerId);
-  if (customerDeleteError) {
-    console.error("顧客データを削除できませんでした。", customerDeleteError);
-    return { success: false, message: "顧客データを削除できませんでした。" };
-  }
-
-  for (let index = 0; index < storagePaths.length; index += 100) {
-    const { error: storageError } = await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).remove(storagePaths.slice(index, index + 100));
-    if (storageError) console.error("削除済み顧客の画像をStorageから削除できませんでした。", storageError);
-  }
-
-  if (customer.auth_user_id) {
-    const { count, error: remainingError } = await supabase
-      .from("customers")
-      .select("id", { count: "exact", head: true })
-      .eq("auth_user_id", customer.auth_user_id);
-    if (remainingError) {
-      console.error("同一アカウントの残存顧客を確認できませんでした。", remainingError);
-    } else if ((count ?? 0) === 0) {
-      const { error: authDeleteError } = await supabase.auth.admin.deleteUser(customer.auth_user_id);
-      if (authDeleteError) console.error("顧客の認証アカウントを削除できませんでした。", authDeleteError);
-    }
+  try {
+    await deleteCustomerData({ customerIds: [customerId] });
+  } catch (error) {
+    console.error("管理者による顧客データの削除に失敗しました。", error);
+    return { success: false, message: "顧客と関連データを削除できませんでした。" };
   }
 
   revalidatePath("/admin");
