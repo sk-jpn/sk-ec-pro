@@ -196,6 +196,26 @@ export async function updateEstimate(
   return { success: true, message: "案件情報を保存しました。" };
 }
 
+export async function changeEstimateCustomer(formData: FormData) {
+  await requireAdminUser();
+  const estimateId = formData.get("estimateId");
+  const customerId = formData.get("customerId");
+  if (typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId) || typeof customerId !== "string" || !UUID_PATTERN.test(customerId)) return;
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.rpc("change_estimate_customer", {
+    p_estimate_id: estimateId,
+    p_customer_id: customerId,
+  });
+  if (error) {
+    console.error("見積の顧客・アカウント紐付けに失敗しました。", error);
+    return;
+  }
+  revalidatePath("/admin/estimates");
+  revalidatePath(`/admin/estimates/${estimateId}`);
+  revalidatePath("/admin/customers");
+}
+
 export async function updateEstimateQuote(
   _previousState: UpdateQuoteState,
   formData: FormData,
@@ -301,7 +321,7 @@ export async function updateEstimateQuote(
         to: [estimate.customerEmail],
         replyTo: from,
         subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,
-        text: `${estimate.customerName} 様\n\nお見積 ${estimate.estimateNo} が完成しました。\n添付のPDFをご確認のうえ、マイページから見積内容をご承認ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\n見積確認・承認ページ:\n${approvalUrl}\n\nこのメールの送信先「${estimate.customerEmail}」と同じメールアドレスが登録されたGoogleアカウントでログインしてください。\n初回ログインの場合はアカウントが作成され、見積データが自動的にマイページへ連携されます。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
+        text: `${estimate.customerName} 様\n\nお見積 ${estimate.estimateNo} が完成しました。\n添付のPDFをご確認のうえ、マイページから見積内容をご承認ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\n見積確認・承認ページ:\n${approvalUrl}\n\nご注意事項：アカウント登録後、マイページで見積を確認できない場合は、このメールに返信してください。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
         attachments: [{ filename: `estimate-${estimate.estimateNo}.pdf`, content: pdf }],
       });
       if (sendError) {

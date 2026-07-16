@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { withBasePath } from "@/config/site";
 import { isAdminUser } from "@/lib/auth/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const CUSTOMER_SIGNUP_COOKIE = "sk_ec_customer_signup";
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const requestedNext = requestUrl.searchParams.get("next");
+  const mode = requestUrl.searchParams.get("mode");
   const next = requestedNext === "/account" || requestedNext === "/estimate" ? requestedNext : "/admin";
   const loginPath = next === "/admin" ? "/admin/login" : "/login";
   const destinationPath = withBasePath(next);
@@ -30,7 +34,6 @@ export async function GET(request: Request) {
   }
 
   if (next === "/account") {
-    const normalizedEmail = user.email?.trim().toLowerCase();
     const admin = createSupabaseAdminClient();
     const { data: linkedCustomer, error: linkedError } = await admin
       .from("customers")
@@ -38,36 +41,43 @@ export async function GET(request: Request) {
       .eq("auth_user_id", user.id)
       .limit(1)
       .maybeSingle();
-    const { data: candidates, error: emailError } = !linkedCustomer && normalizedEmail
-      ? await admin.from("customers").select("email, auth_user_id").ilike("email", normalizedEmail).limit(100)
-      : { data: null, error: null };
-    const hasLegacyEmailMatch = (candidates ?? []).some((customer) =>
-      customer.email.trim().toLowerCase() === normalizedEmail &&
-      (customer.auth_user_id === null || customer.auth_user_id === user.id)
-    );
-    const customerError = linkedError ?? emailError;
-    const hasCustomerAccount = !customerError && (Boolean(linkedCustomer) || hasLegacyEmailMatch);
-
-    if (customerError) {
-      console.error("Googleログイン対象の顧客確認に失敗しました。", customerError);
+    if (linkedError) {
+      console.error("Googleログイン対象の顧客確認に失敗しました。", linkedError);
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=oauth`, requestUrl.origin));
     }
-    if (!hasCustomerAccount) {
-      const { error: pendingError } = await admin.from("pending_customer_links").upsert({
-        auth_user_id: user.id,
-        google_email: normalizedEmail ?? "",
-        status: "pending",
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "auth_user_id" });
-      if (pendingError) {
-        console.error("連携確認待ちアカウントの保存に失敗しました。", pendingError);
+    if (!linkedCustomer && mode === "signup") {
+      const cookieStore = await cookies();
+      const rawSignup = cookieStore.get(CUSTOMER_SIGNUP_COOKIE)?.value;
+      cookieStore.delete(CUSTOMER_SIGNUP_COOKIE);
+      let signup: { name: string; email: string } | null = null;
+      try {
+        const parsed = JSON.parse(Buffer.from(rawSignup ?? "", "base64url").toString("utf8")) as { name?: unknown; email?: unknown };
+        if (typeof parsed.name === "string" && typeof parsed.email === "string") signup = { name: parsed.name.trim(), email: parsed.email.trim().toLowerCase() };
+      } catch {
+        signup = null;
+      }
+      if (!signup?.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signup.email)) {
         await supabase.auth.signOut();
+        return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=signup_expired`, requestUrl.origin));
+      }
+      const { error: createError } = await admin.from("customers").insert({
+        name: signup.name,
+        email: signup.email,
+        prefecture: "",
+        auth_user_id: user.id,
+      });
+      if (createError) {
+        console.error("顧客アカウントの作成に失敗しました。", createError);
+        await supabase.auth.signOut();
+        await admin.auth.admin.deleteUser(user.id);
         return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=configuration`, requestUrl.origin));
       }
-      return NextResponse.redirect(new URL(withBasePath("/account-link-pending"), requestUrl.origin));
+    } else if (!linkedCustomer) {
+      await supabase.auth.signOut();
+      await admin.auth.admin.deleteUser(user.id);
+      return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=account_unregistered`, requestUrl.origin));
     }
-    await admin.from("pending_customer_links").delete().eq("auth_user_id", user.id);
   }
 
   const forwardedHost = request.headers.get("x-forwarded-host");

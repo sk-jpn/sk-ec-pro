@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, Phone, UserRound } from "lucide-react";
+import { ArrowLeft, Link2, Mail, MapPin, Phone, UserRound } from "lucide-react";
 import { notFound } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { PageHeader, StatusBadge } from "../../admin-ui";
@@ -14,6 +14,7 @@ import { PAYMENT_METHODS } from "@/config/payment";
 import { ESTIMATE_IMAGE_BUCKET } from "@/lib/estimates/image-files";
 import { EstimateImageGallery, type EstimateImageView } from "./estimate-image-gallery";
 import { EstimateItemEditor } from "./estimate-item-editor";
+import { changeEstimateCustomer } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ type EstimateDetail = {
   remarks: string | null;
   created_at: string;
   updated_at: string;
-  customers: { name: string; company: string | null; email: string; phone: string | null; prefecture: string; deposit_balance: number } | null;
+  customers: { id: string; name: string; company: string | null; email: string; phone: string | null; prefecture: string; deposit_balance: number; auth_user_id: string | null } | null;
   estimate_items: { id: string; url: string; product_name: string | null; quantity: number; unit_price: number; color: string | null; size: string | null; model: string | null; request: string; estimate_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[]; received_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[] }[];
 };
 
@@ -48,7 +49,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, shipping_method, remarks, created_at, updated_at, customers(name, company, email, phone, prefecture, deposit_balance), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
+    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, shipping_method, remarks, created_at, updated_at, customers(id, name, company, email, phone, prefecture, deposit_balance, auth_user_id), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
     .eq("id", id)
     .maybeSingle();
 
@@ -56,6 +57,8 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   if (!data) notFound();
   const estimate = data as unknown as EstimateDetail;
   const customer = estimate.customers;
+  const { data: linkedCustomers, error: linkedCustomersError } = await supabase.from("customers").select("id, name, email").not("auth_user_id", "is", null).order("created_at", { ascending: false });
+  if (linkedCustomersError) throw new Error(`Google連携済み顧客を取得できませんでした: ${linkedCustomersError.message}`);
   const paths = estimate.estimate_items.flatMap((item) => [...item.estimate_item_images, ...item.received_item_images].map((image) => image.storage_path));
   const { data: signedImages, error: signedImageError } = paths.length ? await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).createSignedUrls(paths, 60 * 60) : { data: [], error: null };
   if (signedImageError) console.error("見積画像の署名URLを作成できませんでした。", signedImageError);
@@ -73,6 +76,22 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
       />
       <div className="space-y-6">
         <EstimateManagementForm estimateId={estimate.id} status={estimate.status} memo={estimate.memo ?? ""} updatedAt={estimate.updated_at} />
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Link2 size={18} className="text-emerald-600" />見積とアカウントの紐付け</CardTitle></CardHeader>
+          <CardContent>
+            <form action={changeEstimateCustomer} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <input type="hidden" name="estimateId" value={estimate.id} />
+              <label className="grid flex-1 gap-2 text-sm font-medium text-slate-700">Google連携済み顧客
+                <select name="customerId" defaultValue={customer?.id ?? ""} required className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm shadow-sm">
+                  <option value="" disabled>顧客を選択してください</option>
+                  {(linkedCustomers ?? []).map((linked) => <option key={linked.id} value={linked.id}>{linked.name}（{linked.email}）</option>)}
+                </select>
+              </label>
+              <Button type="submit" disabled={(linkedCustomers ?? []).length === 0}><Link2 size={16} />この顧客へ変更</Button>
+            </form>
+            <p className="mt-3 text-xs leading-5 text-slate-400">アカウント作成後の顧客を選択すると、この見積がその顧客のマイページに表示されます。</p>
+          </CardContent>
+        </Card>
         <EstimateQuoteForm
           estimateId={estimate.id}
           quoteIssueDate={estimate.quote_issue_date}

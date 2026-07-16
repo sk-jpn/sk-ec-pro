@@ -119,14 +119,6 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
 
-create table if not exists public.pending_customer_links (
-  auth_user_id uuid primary key references auth.users(id) on delete cascade,
-  google_email text not null,
-  status text not null default 'pending' check (status in ('pending')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(), order_no text not null unique,
   estimate_id uuid not null unique references public.estimates(id) on delete restrict,
