@@ -4,12 +4,18 @@ import { withBasePath } from "@/config/site";
 import { isAdminUser } from "@/lib/auth/authorization";
 
 export async function updateSupabaseSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete("x-sk-admin-login");
+  if (request.nextUrl.pathname.endsWith("/admin/login")) {
+    requestHeaders.set("x-sk-admin-login", "1");
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !publishableKey) {
-    return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=configuration`, request.url));
+    return NextResponse.redirect(new URL(`${withBasePath("/admin/login")}?error=configuration`, request.url));
   }
 
   const supabase = createServerClient(url, publishableKey, {
@@ -17,7 +23,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       getAll: () => request.cookies.getAll(),
       setAll: (cookiesToSet) => {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: { headers: requestHeaders } });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
@@ -27,7 +33,7 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !isAdminUser(user)) {
-    const loginUrl = new URL(withBasePath("/login"), request.url);
+    const loginUrl = new URL(withBasePath("/admin/login"), request.url);
     if (user) loginUrl.searchParams.set("error", "unauthorized");
     return NextResponse.redirect(loginUrl);
   }

@@ -6,7 +6,7 @@ import { EstimateForm } from "./estimate-form";
 export const metadata: Metadata = {
   title: "無料見積｜中国EC購入代行｜SK EC Pro",
   description:
-    "Taobao、Tmall、1688、Xianyu、REDなどの中国EC商品について、無料で見積をご依頼いただけます。",
+    "Taobao、Tmall、1688、Alibaba、Xianyu、REDなどの中国EC商品について、無料で見積をご依頼いただけます。",
 };
 
 export default function EstimatePage() {

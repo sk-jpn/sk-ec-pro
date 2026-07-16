@@ -6,6 +6,7 @@ import {
   Check,
   ClipboardCheck,
   CreditCard,
+  Globe2,
   Handshake,
   Headphones,
   Languages,
@@ -24,8 +25,9 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { SiteFooter, SiteHeader } from "./components/site-chrome";
-import { EstimateStatusSearch } from "./components/estimate-status-search";
+import { withBasePath } from "@/config/site";
 
 const services = [
   {
@@ -35,22 +37,28 @@ const services = [
     icon: ShoppingBag,
   },
   {
+    name: "Tmall",
+    sub: "天猫",
+    text: "ブランド公式店や正規販売店の商品購入に対応。",
+    icon: Store,
+  },
+  {
     name: "1688",
     sub: "中国国内向け卸売",
     text: "中国国内向けの卸売サイト。業務用商品やまとめ買い、仕入れに対応。",
     icon: Box,
   },
   {
-    name: "Xianyu",
-    sub: "闲鱼・咸鱼",
-    text: "中古品、廃盤品、コレクター商品、個人出品商品の購入に対応。",
-    icon: Search,
+    name: "Alibaba",
+    sub: "法人向け卸売",
+    text: "卸売、法人向け商品、大口注文、OEM相談に対応。",
+    icon: Globe2,
   },
   {
-    name: "Tmall",
-    sub: "天猫",
-    text: "ブランド公式店や正規販売店の商品購入に対応。",
-    icon: Store,
+    name: "Xianyu",
+    sub: "闲鱼",
+    text: "中古品、廃盤品、コレクター商品、個人出品商品の購入に対応。",
+    icon: Search,
   },
   {
     name: "RED",
@@ -108,6 +116,11 @@ const shops = [
     icon: Store,
     href: "https://www.amazon.co.jp/stores/iFormosa/page/8055D27A-D7EF-452A-B983-3D7E673B6287",
   },
+];
+
+const originalProducts = [
+  { name: "iFormosa FFヒーター 12V 2KW", image: "/products/ifphd2kw12v.jpg", text: "軽油・灯油に対応した、車中泊やキャンピングカー向けのパーキングヒーター。", href: "https://store.shopping.yahoo.co.jp/taobaonotatsujinpro/ifphd2kw12v.html" },
+  { name: "iFormosa 6KW FFコンビヒーター D6", image: "/products/if-dsbl-6k.jpg", text: "空気暖房と給湯を一台にまとめた、12V・100V対応の軽油ヒーターボイラー。", href: "https://store.shopping.yahoo.co.jp/taobaonotatsujinpro/if-dsbl-6k.html" },
 ];
 
 const reasons = [
@@ -276,8 +289,6 @@ export default function Home() {
         </div>
       </section>
 
-      <EstimateStatusSearch />
-
       <section id="shops" className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end lg:gap-20">
@@ -298,6 +309,15 @@ export default function Home() {
                 </article>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-100 bg-slate-50/70 py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end lg:gap-20">
+            <div><p className="section-label">Our Original Items</p><h2 className="section-title">当社オリジナル製品</h2><p className="section-copy">実用性と使いやすさにこだわった、オリジナルブランド iFormosa の製品です。</p><Link href="/original-products" className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800">製品一覧を見る <ArrowRight size={16} /></Link></div>
+            <div className="grid gap-4 sm:grid-cols-2">{originalProducts.map((product) => <article key={product.name} className="overflow-hidden rounded-[1.75rem] border border-slate-100 bg-white"><div className="relative aspect-[4/3] bg-white"><Image src={withBasePath(product.image)} alt={product.name} fill sizes="(min-width: 1024px) 30vw, 100vw" className="object-contain p-4" /></div><div className="border-t border-slate-100 p-6"><h3 className="font-semibold leading-6">{product.name}</h3><p className="mt-3 text-sm leading-7 text-slate-500">{product.text}</p><a href={product.href} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue-600">Yahoo!ショップで見る <ArrowRight size={15} /></a></div></article>)}</div>
           </div>
         </div>
       </section>

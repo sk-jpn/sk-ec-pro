@@ -28,6 +28,7 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
         <nav className="hidden items-center gap-4 text-[13px] font-medium text-slate-600 lg:flex" aria-label="メインナビゲーション">
           <Link className="transition hover:text-blue-600" href="/purchase-agent">中国EC購入代行</Link>
           <Link className="transition hover:text-blue-600" href="/pricing">料金</Link>
+          <Link className="transition hover:text-blue-600" href="/#shops">当社運営ショップ</Link>
           <Link className="transition hover:text-blue-600" href="/original-products">当社オリジナル製品</Link>
           <Link className="transition hover:text-blue-600" href="/faq">FAQ</Link>
           <Link className="transition hover:text-blue-600" href="/contact">お問い合わせ</Link>
@@ -40,7 +41,7 @@ export function SiteHeader({ showBrandNotice = false }: { showBrandNotice?: bool
           <details className="group relative">
             <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full border border-slate-200 bg-white text-slate-700" aria-label="メニューを開く"><Menu size={19} /></summary>
             <nav className="absolute right-0 top-12 grid w-64 gap-1 rounded-2xl border border-slate-100 bg-white p-3 text-sm font-medium text-slate-700 shadow-2xl" aria-label="モバイルナビゲーション">
-              <Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/purchase-agent">中国EC購入代行</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/pricing">料金</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/original-products">当社オリジナル製品</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/faq">FAQ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/contact">お問い合わせ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/account">My Page</Link>
+              <Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/purchase-agent">中国EC購入代行</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/pricing">料金</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/#shops">当社運営ショップ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/original-products">当社オリジナル製品</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/faq">FAQ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/contact">お問い合わせ</Link><Link className="rounded-xl px-3 py-3 hover:bg-blue-50" href="/account">My Page</Link>
             </nav>
           </details>
           <Link className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white" href="/estimate">無料見積</Link>

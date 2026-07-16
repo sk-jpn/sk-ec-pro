@@ -14,7 +14,7 @@ type Step = "input" | "confirm" | "complete";
 const emptyProduct = (id: number): Product => ({ id, url: "", images: [], quantity: "1", color: "", size: "", model: "", request: "" });
 const initialCustomer: Customer = { name: "", email: "", company: "", phone: "", marketplace: "", sellerQuestion: "", shipping: "おまかせ", deadline: "", prefecture: "", notes: "", createAccount: true, terms: false, privacy: false };
 const prefectures = ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県", "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県", "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"];
-const marketplaces = ["Taobao（淘宝）", "Tmall（天猫）", "1688", "Xianyu（闲鱼）", "RED（小紅書）", "その他"];
+const marketplaces = ["Taobao（淘宝）", "Tmall（天猫）", "1688", "Alibaba", "Xianyu（闲鱼）", "RED（小紅書）", "その他"];
 
 function fieldClass(error?: string, textarea = false) {
   return `mt-2 min-h-12 w-full rounded-xl border bg-white px-4 text-base text-slate-900 outline-none transition placeholder:text-slate-300 focus:ring-4 ${textarea ? "min-h-32 resize-y py-3" : ""} ${error ? "border-red-400 focus:border-red-500 focus:ring-red-100" : "border-slate-200 focus:border-blue-500 focus:ring-blue-100"}`;

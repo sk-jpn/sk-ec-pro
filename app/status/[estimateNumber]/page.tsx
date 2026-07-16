@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Ban, Check, Circle, Clock3, FileSearch } from "lucide-react";
 import { notFound } from "next/navigation";
 import { SiteFooter, SiteHeader } from "@/app/components/site-chrome";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireCustomerUser } from "@/lib/auth/require-customer";
 
 export const dynamic = "force-dynamic";
 
@@ -35,11 +35,11 @@ function statusLabel(status: string) {
 }
 
 export default async function EstimateStatusPage({ params }: PageProps<"/status/[estimateNumber]">) {
+  const { supabase } = await requireCustomerUser();
   const { estimateNumber: rawEstimateNumber } = await params;
   const estimateNumber = rawEstimateNumber.trim().toUpperCase();
   if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) notFound();
 
-  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
     .select("estimate_no, status, created_at")

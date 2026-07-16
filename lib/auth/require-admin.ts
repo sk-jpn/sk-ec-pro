@@ -7,8 +7,8 @@ export async function requireAdminUser() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-  if (!isAdminUser(user)) redirect("/login?error=unauthorized");
+  if (!user) redirect("/admin/login");
+  if (!isAdminUser(user)) redirect("/admin/login?error=unauthorized");
 
   return user;
 }
