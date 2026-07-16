@@ -220,8 +220,9 @@ export async function POST(request: Request) {
     const { error: linkError } = estimateOwner
       ? await admin.from("customers").update({ auth_user_id: authenticatedUserId }).eq("id", estimateOwner.customer_id)
       : { error: ownerError ?? new Error("顧客情報が見つかりません。") };
-    if (ownerError || linkError) {
-      console.error("Googleログインユーザーへの見積紐付けに失敗しました。", ownerError ?? linkError);
+    const { error: profileError } = await admin.from("profiles").update({ full_name: data.customer.name, updated_at: new Date().toISOString() }).eq("id", authenticatedUserId);
+    if (ownerError || linkError || profileError) {
+      console.error("Googleログインユーザーへの見積紐付けに失敗しました。", ownerError ?? linkError ?? profileError);
       return Response.json({ message: "マイページへの見積紐付けに失敗しました。時間をおいて再度お試しください。" }, { status: 502 });
     }
   }
