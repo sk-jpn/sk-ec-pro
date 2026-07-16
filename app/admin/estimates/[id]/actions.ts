@@ -234,6 +234,42 @@ export async function updateEstimateQuote(
     return { success: false, message: "商品情報を保存できませんでした。" };
   }
 
+  let accountGuideSent = false;
+  if (saveMode === "complete") {
+    const { data: accountTarget, error: accountTargetError } = await supabase
+      .from("estimates")
+      .select("estimate_no, customers(name, email, auth_user_id)")
+      .eq("id", estimateId)
+      .maybeSingle();
+    if (accountTargetError || !accountTarget) {
+      console.error("顧客アカウント連携状況を確認できませんでした。", accountTargetError);
+      return { success: false, message: "見積内容は保存されましたが、顧客アカウントの状態を確認できませんでした。" };
+    }
+    const customer = accountTarget.customers as unknown as { name: string; email: string; auth_user_id: string | null } | null;
+    if (!customer) return { success: false, message: "見積内容は保存されましたが、顧客情報を確認できませんでした。" };
+    {
+      const apiKey = process.env.RESEND_API_KEY;
+      const from = process.env.RESEND_FROM_EMAIL;
+      if (!apiKey || !from) return { success: false, message: "見積内容は保存されましたが、マイページ案内メールの設定が完了していません。" };
+      const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
+      const siteOrigin = new URL(process.env.SITE_URL || "https://formosajapan.com").origin;
+      const loginUrl = `${siteOrigin}/ec/login?next=/account`;
+      const resend = new Resend(apiKey);
+      const { error: guideError } = await resend.emails.send({
+        from: sender,
+        to: [customer.email],
+        replyTo: from,
+        subject: `【SK EC Pro】マイページ登録・ログインのご案内 ${accountTarget.estimate_no}`,
+        text: `${customer.name} 様\n\nお見積 ${accountTarget.estimate_no} の確認準備が整いました。\n見積内容の確認・承認には、下記よりGoogleログインをご利用ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\nこのメールの送信先「${customer.email}」と同じメールアドレスが登録されたGoogleアカウントでログインしてください。\n初回ログインの場合はアカウントが作成され、見積データが自動的にマイページへ連携されます。登録済みの場合は、そのままマイページへログインできます。\n\nGoogleアカウントを利用しない場合は、引き続きメールでご案内いたします。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
+      });
+      if (guideError) {
+        console.error("マイページ案内メールの送信に失敗しました。", guideError);
+        return { success: false, message: "見積内容は保存されましたが、マイページ案内メールを送信できませんでした。" };
+      }
+      accountGuideSent = true;
+    }
+  }
+
   const nextStatus = saveMode === "complete" ? "お客様確認中" : "見積作成中";
   const eligibleStatuses = saveMode === "complete" ? ["新規", "見積作成中"] : ["新規"];
   const { error: statusError } = await supabase
@@ -249,7 +285,7 @@ export async function updateEstimateQuote(
   revalidatePath("/admin/estimates");
   revalidatePath(`/admin/estimates/${estimateId}`);
   return saveMode === "complete"
-    ? { success: true, message: "見積内容を保存し、お客様確認中へ更新しました。" }
+    ? { success: true, message: accountGuideSent ? "見積内容を保存し、マイページ案内メールを送信してお客様確認中へ更新しました。" : "見積内容を保存し、お客様確認中へ更新しました。" }
     : { success: true, message: "見積内容を一時保存しました。" };
 }
 
@@ -276,7 +312,7 @@ export async function sendEstimateQuote(estimateId: string): Promise<UpdateQuote
       to: [estimate.customerEmail],
       replyTo: from,
       subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,
-      text: `${estimate.customerName} 様\n\nご依頼いただきましたお見積書をお送りします。\n添付のPDFをご確認のうえ、下記ページからご承認ください。\n\n見積確認・承認ページ:\nhttps://formosajapan.com/ec/estimate/${estimate.estimateNo}\n\n進捗確認ページ:\nhttps://formosajapan.com/ec/status/${estimate.estimateNo}\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
+      text: `${estimate.customerName} 様\n\nご依頼いただきましたお見積書をお送りします。\n添付のPDFをご確認のうえ、下記ページからご承認ください。\n\nマイページ登録・ログイン:\nhttps://formosajapan.com/ec/login?next=/account\n\n見積確認・承認ページ:\nhttps://formosajapan.com/ec/estimate/${estimate.estimateNo}\n\nこのメールの送信先と同じメールアドレスが登録されたGoogleアカウントでログインすると、見積データがマイページへ連携されます。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
       attachments: [{ filename: `estimate-${estimate.estimateNo}.pdf`, content: pdf }],
     });
     if (error) throw new Error(error.message);
