@@ -44,5 +44,6 @@ export async function deleteCustomerAccount(_state: ProfileState, formData: Form
     return { success: false, message: "顧客データは削除されましたが、ログイン情報を削除できませんでした。もう一度お試しください。" };
   }
 
+  await supabase.auth.signOut();
   redirect("/login?account=deleted");
 }
