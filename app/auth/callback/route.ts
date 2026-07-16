@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withBasePath } from "@/config/site";
 import { isAdminUser } from "@/lib/auth/authorization";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -25,6 +26,26 @@ export async function GET(request: Request) {
   if (!user || (next === "/admin" && !isAdminUser(user))) {
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL(`${withBasePath(loginPath)}?error=unauthorized`, requestUrl.origin));
+  }
+
+  if (next === "/account") {
+    const normalizedEmail = user.email?.trim().toLowerCase();
+    const admin = createSupabaseAdminClient();
+    const { data: candidates, error: customerError } = normalizedEmail
+      ? await admin.from("customers").select("email, auth_user_id").ilike("email", normalizedEmail).limit(100)
+      : { data: null, error: null };
+    const hasCustomerAccount = !customerError && (candidates ?? []).some((customer) =>
+      customer.email.trim().toLowerCase() === normalizedEmail &&
+      (customer.auth_user_id === null || customer.auth_user_id === user.id)
+    );
+
+    if (!hasCustomerAccount) {
+      if (customerError) console.error("Googleログイン対象の顧客確認に失敗しました。", customerError);
+      await supabase.auth.signOut();
+      const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+      if (deleteError) console.error("未登録GoogleユーザーのAuth削除に失敗しました。", deleteError);
+      return NextResponse.redirect(new URL(withBasePath("/account-not-found"), requestUrl.origin));
+    }
   }
 
   const forwardedHost = request.headers.get("x-forwarded-host");
