@@ -43,7 +43,7 @@ export function PaymentPanel({
   }
   if (cancelled) return <p className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center text-sm font-semibold text-red-700">キャンセルされた見積は承認・決済できません。</p>;
   if ((approved || bankState.success) && paymentMethod === PAYMENT_METHODS.bankTransfer) {
-    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900"><CheckCircle2 className="mx-auto text-emerald-600" size={30} /><p className="mt-4 text-center text-base font-semibold">見積を承認しました。入金を確認後、発注作業を開始します。</p><div className="mt-5 rounded-xl bg-white/80 p-4"><p className="text-xs font-bold text-emerald-700">銀行振込先</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7">{bankTransferDetails}</p></div></div>;
+    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900"><CheckCircle2 className="mx-auto text-emerald-600" size={30} /><p className="mt-4 text-center text-base font-semibold">見積を承認しました。入金を確認後、発注作業を開始します。</p><div className="mt-5 rounded-xl bg-white/80 p-4"><p className="text-xs font-bold text-emerald-700">銀行振込先（振込手数料お客様ご負担となります）</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7">{bankTransferDetails}</p></div></div>;
   }
   if (!approvalAllowed) {
     return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><p className="font-semibold text-amber-900">{currentStatus === "見積作成中" ? "現在、見積を作成しています" : `現在のステータス：${currentStatus}`}</p><p className="mt-2 text-sm leading-6 text-amber-700">{currentStatus === "見積作成中" ? "管理者が見積作成を完了するまで、承認・決済はできません。" : "進捗や確認事項はメッセージからお問い合わせいただけます。"}</p></div>;
