@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Resend } from "resend";
 import { requireAdminUser } from "@/lib/auth/require-admin";
 import { requireCustomerUser } from "@/lib/auth/require-customer";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -51,7 +52,49 @@ export async function sendCaseMessage(_state: SendMessageState, formData: FormDa
     console.error("メッセージ添付の保存に失敗しました。", uploadError);
     return { success: false, message: "添付ファイルを保存できませんでした。" };
   }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (apiKey && from) {
+    try {
+      const { data: estimate } = await admin.from("estimates").select("estimate_no, customers(email)").eq("id", estimateId).maybeSingle();
+      const estimateNo = estimate?.estimate_no ?? estimateId;
+      const customerEmail = estimate?.customers?.email;
+      const resend = new Resend(apiKey);
+      if (senderType === "customer") {
+        await resend.emails.send({
+          from: from.includes("<") ? from : `Formosa Inc <${from}>`,
+          to: [from],
+          replyTo: from,
+          subject: `【SK EC Pro】メッセージを受信しました（案件 ${estimateNo}）`,
+          text: `新しいメッセージを受信しました。
+
+案件番号: ${estimateNo}
+送信者: お客様
+
+マイページにログインしてご確認ください。`,
+        });
+      } else if (customerEmail) {
+        await resend.emails.send({
+          from: from.includes("<") ? from : `Formosa Inc <${from}>`,
+          to: [customerEmail],
+          replyTo: from,
+          subject: `【SK EC Pro】メッセージを受信しました（案件 ${estimateNo}）`,
+          text: `新しいメッセージを受信しました。
+
+案件番号: ${estimateNo}
+送信者: 管理者
+
+マイページにログインしてご確認ください。`,
+        });
+      }
+    } catch (sendError) {
+      console.error("メッセージ通知メールの送信に失敗しました。", sendError);
+    }
+  }
+
   revalidatePath(`/admin/estimates/${estimateId}`);
   revalidatePath(`/account/estimates/${estimateId}`);
   return { success: true, message: "メッセージを送信しました。" };
 }
+
