@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { Resend } from "resend";
 import { withBasePath } from "@/config/site";
 import { isAdminUser } from "@/lib/auth/authorization";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -72,6 +73,21 @@ export async function GET(request: Request) {
         await supabase.auth.signOut();
         await admin.auth.admin.deleteUser(user.id);
         return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=configuration`, requestUrl.origin));
+      }
+      const apiKey = process.env.RESEND_API_KEY;
+      const from = process.env.RESEND_FROM_EMAIL;
+      if (apiKey && from) {
+        const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
+        const { error: notificationError } = await new Resend(apiKey).emails.send({
+          from: sender,
+          to: ["contact@formosajapan.com"],
+          replyTo: signup.email,
+          subject: "【SK EC Pro】顧客アカウントが作成されました",
+          text: `新しい顧客アカウントが作成されました。\n\n顧客氏名：${signup.name}\n連絡用メールアドレス：${signup.email}\n\n管理画面で顧客情報と見積の紐付けをご確認ください。`,
+        });
+        if (notificationError) console.error("顧客アカウント作成通知メールの送信に失敗しました。", notificationError);
+      } else {
+        console.error("顧客アカウント作成通知メールを送信できません。Resend設定がありません。");
       }
     } else if (!linkedCustomer) {
       await supabase.auth.signOut();
