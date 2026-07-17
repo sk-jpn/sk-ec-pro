@@ -168,7 +168,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
       await new Resend(apiKey).emails.send({
         from: from.includes("<") ? from : `Formosa Inc <${from}>`, to: [estimate.customerEmail], replyTo: from,
         subject: "【SK EC Pro】お支払いのご案内",
-        text: `${estimate.customerName} 様\n\nお見積をご承認いただきありがとうございます。\n\n銀行振込先\n${process.env.BANK_TRANSFER_DETAILS || "振込先情報はマイページをご確認ください。"}\n\nクレジットカード決済\n${session.url}\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
+        text: `${estimate.customerName} 様\n\nお見積をご承認いただきありがとうございます。\n\n銀行振込先\n${process.env.BANK_TRANSFER_DETAILS || "振込先情報はマイページをご確認ください。"}\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
       });
     }
 
