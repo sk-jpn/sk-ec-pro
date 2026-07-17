@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, House, PackageCheck, UserRound } from "lucide-react";
+import { FileText, House, MessageSquare, PackageCheck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/account", label: "ホーム", icon: House, exact: true },
   { href: "/account/estimates", label: "見積", icon: FileText },
+  { href: "/account/messages", label: "メッセージ", icon: MessageSquare },
   { href: "/account/orders", label: "注文", icon: PackageCheck },
   { href: "/account/profile", label: "プロフィール", icon: UserRound },
 ];

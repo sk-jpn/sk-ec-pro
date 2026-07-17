@@ -14,7 +14,9 @@ import { PAYMENT_METHODS } from "@/config/payment";
 import { ESTIMATE_IMAGE_BUCKET } from "@/lib/estimates/image-files";
 import { EstimateImageGallery, type EstimateImageView } from "./estimate-image-gallery";
 import { EstimateItemEditor } from "./estimate-item-editor";
-import { changeEstimateCustomer } from "./actions";
+import { changeEstimateCustomer, updateTracking } from "./actions";
+import { CaseMessages } from "@/app/components/case-messages";
+import { loadCaseMessages } from "@/lib/messages/case-messages";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,7 @@ type EstimateDetail = {
   updated_at: string;
   customers: { id: string; name: string; company: string | null; email: string; phone: string | null; prefecture: string; deposit_balance: number; auth_user_id: string | null } | null;
   estimate_items: { id: string; url: string; product_name: string | null; quantity: number; unit_price: number; color: string | null; size: string | null; model: string | null; request: string; estimate_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[]; received_item_images: { id: string; storage_path: string; original_name: string; sort_order: number }[] }[];
+  estimate_tracking_numbers: { sort_order: number; carrier: string; tracking_number: string; note: string | null }[];
 };
 
 export default async function EstimateDetailPage({ params }: PageProps<"/admin/estimates/[id]">) {
@@ -49,7 +52,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, shipping_method, remarks, created_at, updated_at, customers(id, name, company, email, phone, prefecture, deposit_balance, auth_user_id), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order))")
+    .select("id, estimate_no, status, approved_at, paid_at, memo, quote_issue_date, valid_until, payment_method, payment_fee, deposit, international_shipping_fee, agency_fee, other_fee, discount, tax, tax_rate, shipping_method, remarks, created_at, updated_at, customers(id, name, company, email, phone, prefecture, deposit_balance, auth_user_id), estimate_items(id, url, product_name, quantity, unit_price, color, size, model, request, estimate_item_images(id, storage_path, original_name, sort_order), received_item_images(id, storage_path, original_name, sort_order)), estimate_tracking_numbers(sort_order, carrier, tracking_number, note)")
     .eq("id", id)
     .maybeSingle();
 
@@ -63,6 +66,7 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
   const { data: signedImages, error: signedImageError } = paths.length ? await supabase.storage.from(ESTIMATE_IMAGE_BUCKET).createSignedUrls(paths, 60 * 60) : { data: [], error: null };
   if (signedImageError) console.error("見積画像の署名URLを作成できませんでした。", signedImageError);
   const signedUrlByPath = new Map((signedImages ?? []).map((entry, index) => [paths[index], entry.signedUrl]));
+  const messages = await loadCaseMessages(estimate.id);
 
   return (
     <>
@@ -75,6 +79,8 @@ export default async function EstimateDetailPage({ params }: PageProps<"/admin/e
         action={<div className="text-right"><StatusBadge status={estimate.status} />{estimate.approved_at && <p className="mt-2 text-xs text-slate-400">承認日時: {new Intl.DateTimeFormat("ja-JP", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(estimate.approved_at))}</p>}{estimate.paid_at && <p className="mt-1 text-xs text-emerald-600">入金日時: {new Intl.DateTimeFormat("ja-JP", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Tokyo" }).format(new Date(estimate.paid_at))}</p>}</div>}
       />
       <div className="space-y-6">
+        <CaseMessages estimateId={estimate.id} viewer="admin" messages={messages} />
+        <Card><CardHeader><CardTitle>追跡情報（最大5件）</CardTitle></CardHeader><CardContent><form action={updateTracking} className="grid gap-3"><input type="hidden" name="estimateId" value={estimate.id} />{Array.from({ length: 5 }, (_, index) => { const number = index + 1; const row = estimate.estimate_tracking_numbers.find((entry) => entry.sort_order === number); return <div key={number} className="grid gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-3"><input name={`carrier_${number}`} defaultValue={row?.carrier ?? ""} maxLength={100} placeholder={`配送会社 ${number}`} className="h-10 rounded-md border border-slate-200 px-3 text-sm" /><input name={`tracking_${number}`} defaultValue={row?.tracking_number ?? ""} maxLength={200} placeholder="追跡番号" className="h-10 rounded-md border border-slate-200 px-3 text-sm" /><input name={`trackingNote_${number}`} defaultValue={row?.note ?? ""} maxLength={500} placeholder="備考" className="h-10 rounded-md border border-slate-200 px-3 text-sm" /></div>; })}<Button type="submit" className="w-fit">追跡情報を保存</Button></form></CardContent></Card>
         <EstimateManagementForm estimateId={estimate.id} status={estimate.status} memo={estimate.memo ?? ""} updatedAt={estimate.updated_at} />
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Link2 size={18} className="text-emerald-600" />見積とアカウントの紐付け</CardTitle></CardHeader>

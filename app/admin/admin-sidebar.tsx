@@ -2,13 +2,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, ClipboardList, LayoutDashboard, Settings, Truck, Users } from "lucide-react";
+import { Boxes, ClipboardList, LayoutDashboard, MessageSquare, Settings, Truck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/config/site";
 
 const navigation = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/estimates", label: "見積管理", icon: ClipboardList },
+  { href: "/admin/messages", label: "メッセージ", icon: MessageSquare },
   { href: "/admin/customers", label: "顧客管理", icon: Users },
   { href: "/admin/orders", label: "注文管理", icon: Boxes },
   { href: "/admin/shipping", label: "発送管理", icon: Truck },

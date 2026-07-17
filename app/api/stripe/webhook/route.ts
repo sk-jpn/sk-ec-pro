@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const { error } = await supabase
       .from("estimates")
       .update({
-        status: "paid",
+        status: "発注作業中",
         paid_at: new Date().toISOString(),
         payment_method: PAYMENT_METHODS.stripeCard,
         payment_fee: paymentFee,

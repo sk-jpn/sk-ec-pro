@@ -7,12 +7,13 @@ import { getEstimateQuoteData } from "@/lib/estimates/quote-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireCustomerUser } from "@/lib/auth/require-customer";
 import { getStripeClient } from "@/lib/stripe/client";
+import { Resend } from "resend";
 
 export type ApproveEstimateState = {
   success: boolean;
   message: string;
 };
-const CUSTOMER_APPROVAL_STATUSES = ["お客様確認中"];
+const CUSTOMER_APPROVAL_STATUSES = ["見積確認待ち"];
 const ADDRESS_REQUIRED_MESSAGE = "商品の発送にはお届け先住所の登録が必要です。プロフィール画面で必須項目を入力してから、もう一度承認してください。";
 
 async function hasCompleteShippingAddress(userId: string) {
@@ -48,11 +49,11 @@ export async function approveEstimate(
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .update({ status: "approved", approved_at: new Date().toISOString(), payment_method: PAYMENT_METHODS.bankTransfer, payment_fee: 0, stripe_checkout_session_id: null })
+    .update({ status: "入金待ち", approved_at: new Date().toISOString(), payment_method: PAYMENT_METHODS.bankTransfer, payment_fee: 0, stripe_checkout_session_id: null })
     .eq("id", ownedEstimate.id)
     .in("status", CUSTOMER_APPROVAL_STATUSES)
     .is("approved_at", null)
-    .neq("status", "approved")
+    .neq("status", "入金待ち")
     .neq("status", "キャンセル")
     .select("id")
     .maybeSingle();
@@ -64,11 +65,23 @@ export async function approveEstimate(
 
   if (!data) {
     const { data: current } = await supabase.from("estimates").select("status, approved_at").eq("estimate_no", estimateNumber).maybeSingle();
-    if (current?.status === "approved" || current?.approved_at) return { success: false, message: "この見積はすでに承認されています。" };
+    if (current?.status === "入金待ち" || current?.approved_at) return { success: false, message: "この見積はすでに承認されています。" };
     if (current?.status === "キャンセル") return { success: false, message: "キャンセルされた見積は承認できません。" };
     return { success: false, message: "見積情報を確認できませんでした。" };
   }
 
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (apiKey && from) {
+    const admin = createSupabaseAdminClient();
+    const { data: recipient } = await admin.from("estimates").select("estimate_no, customers(name, email)").eq("id", data.id).single();
+    const customer = recipient?.customers as unknown as { name: string; email: string } | null;
+    if (customer) await new Resend(apiKey).emails.send({
+      from: from.includes("<") ? from : `Formosa Inc <${from}>`, to: [customer.email], replyTo: from,
+      subject: "【SK EC Pro】お支払いのご案内",
+      text: `${customer.name} 様\n\nお見積をご承認いただきありがとうございます。\n\n銀行振込先\n${process.env.BANK_TRANSFER_DETAILS || "振込先情報はマイページをご確認ください。"}\n\nクレジットカード決済\nhttps://www.formosajapan.com/ec/estimate/${estimateNumber}\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
+    });
+  }
   revalidatePath("/admin/estimates");
   revalidatePath(`/admin/estimates/${data.id}`);
   revalidatePath(`/ec/estimate/${estimateNumber}`);
@@ -94,7 +107,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
   const supabase = createSupabaseAdminClient();
   const current = ownedEstimate;
   if (current.status === "キャンセル") return { success: false, message: "キャンセルされた見積は決済できません。" };
-  if (current.status === "paid" || current.paid_at) return { success: false, message: "この見積は入金済みです。" };
+  if (current.status === "発注作業中" || current.paid_at) return { success: false, message: "この見積は入金済みです。" };
 
   try {
     const estimate = await getEstimateQuoteData(current.id);
@@ -132,7 +145,7 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
     const { data: updated, error: updateError } = await supabase
       .from("estimates")
       .update({
-        status: "approved",
+        status: "入金待ち",
         approved_at: current.approved_at ?? new Date().toISOString(),
         payment_method: PAYMENT_METHODS.stripeCard,
         payment_fee: paymentFee,
@@ -149,6 +162,16 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
       return { success: false, message: "決済情報を保存できませんでした。" };
     }
 
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM_EMAIL;
+    if (apiKey && from) {
+      await new Resend(apiKey).emails.send({
+        from: from.includes("<") ? from : `Formosa Inc <${from}>`, to: [estimate.customerEmail], replyTo: from,
+        subject: "【SK EC Pro】お支払いのご案内",
+        text: `${estimate.customerName} 様\n\nお見積をご承認いただきありがとうございます。\n\n銀行振込先\n${process.env.BANK_TRANSFER_DETAILS || "振込先情報はマイページをご確認ください。"}\n\nクレジットカード決済\n${session.url}\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
+      });
+    }
+
     revalidatePath("/admin/estimates");
     revalidatePath(`/admin/estimates/${current.id}`);
     revalidatePath(`/ec/estimate/${estimate.estimateNo}`);
@@ -157,4 +180,26 @@ export async function createStripeCheckout(estimateNumber: string): Promise<Chec
     console.error("Stripe Checkoutの作成に失敗しました。", error);
     return { success: false, message: "カード決済を開始できませんでした。" };
   }
+}
+
+export async function cancelEstimate(_state: ApproveEstimateState, formData: FormData): Promise<ApproveEstimateState> {
+  const estimateNumber = String(formData.get("estimateNumber") ?? "").trim().toUpperCase();
+  if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) return { success: false, message: "見積番号が正しくありません。" };
+  const { supabase } = await requireCustomerUser();
+  const { data: owned } = await supabase.from("estimates").select("id, status").eq("estimate_no", estimateNumber).maybeSingle();
+  if (!owned || owned.status !== "見積確認待ち") return { success: false, message: "この見積はキャンセルできません。" };
+  const { error } = await createSupabaseAdminClient().from("estimates").update({ status: "キャンセル" }).eq("id", owned.id).eq("status", "見積確認待ち");
+  if (error) return { success: false, message: "キャンセルを保存できませんでした。" };
+  revalidatePath(`/ec/estimate/${estimateNumber}`); revalidatePath(`/account/estimates/${owned.id}`); revalidatePath("/admin/estimates");
+  return { success: true, message: "見積をキャンセルしました。" };
+}
+
+export async function approveReceivedImages(formData: FormData) {
+  const estimateNumber = String(formData.get("estimateNumber") ?? "").trim().toUpperCase();
+  if (!/^SK\d{6}-\d{4}$/.test(estimateNumber)) return;
+  const { supabase } = await requireCustomerUser();
+  const { data: owned } = await supabase.from("estimates").select("id, status").eq("estimate_no", estimateNumber).maybeSingle();
+  if (!owned || owned.status !== "画像確認待ち") return;
+  await createSupabaseAdminClient().from("estimates").update({ status: "日本発送待ち" }).eq("id", owned.id).eq("status", "画像確認待ち");
+  revalidatePath(`/account/estimates/${owned.id}`); revalidatePath("/admin/estimates");
 }

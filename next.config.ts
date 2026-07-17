@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   basePath: "/ec",
   experimental: {
     serverActions: {
-      bodySizeLimit: "22mb",
+      bodySizeLimit: "12mb",
     },
   },
   serverExternalPackages: ["pdfkit"],

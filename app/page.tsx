@@ -37,10 +37,10 @@ const services = [
     icon: ShoppingBag,
   },
   {
-    name: "Tmall",
-    sub: "天猫",
-    text: "ブランド公式店や正規販売店の商品購入に対応。",
-    icon: Store,
+    name: "AliExpress",
+    sub: "海外向けEC",
+    text: "中国発の海外向けECサイト。幅広い商品の購入相談に対応。",
+    icon: Globe2,
   },
   {
     name: "1688",
@@ -166,7 +166,7 @@ export default function Home() {
               <span className="text-blue-600">もっと安心に。</span>
             </h1>
             <p className="mt-8 max-w-xl text-base leading-8 text-slate-600 sm:text-lg">
-              Taobao・1688・Xianyu・Tmallなどの中国ECサイトから、お客様に代わって商品を購入し、日本へ発送します。当社が運営するYahoo!ショッピング・Amazonでも商品を販売しています。
+              Taobao・1688・Alibaba・AliExpress・Xianyuなどの中国ECサイトから、お客様に代わって商品を購入し、日本へ発送します。当社が運営するYahoo!ショッピング・Amazonでも商品を販売しています。
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <a href="#contact" className="group inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700">

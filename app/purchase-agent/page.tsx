@@ -23,7 +23,6 @@ import {
   ShieldAlert,
   ShoppingBag,
   Sparkles,
-  Store,
   Truck,
   Warehouse,
 } from "lucide-react";
@@ -32,7 +31,7 @@ import { SiteFooter, SiteHeader } from "../components/site-chrome";
 export const metadata: Metadata = {
   title: "中国EC購入代行｜Taobao・1688・Xianyu対応｜SK EC Pro",
   description:
-    "Taobao、1688、Xianyu、Tmall、Alibabaなどの中国EC商品を購入代行し、日本への国際発送までサポートします。",
+    "Taobao、1688、Xianyu、Alibaba、AliExpressなどの中国EC商品を購入代行し、日本への国際発送までサポートします。",
 };
 
 const platforms = [
@@ -55,10 +54,10 @@ const platforms = [
     icon: Search,
   },
   {
-    name: "Tmall",
-    sub: "天猫",
-    text: "ブランド公式店や正規販売店で販売されている商品の購入依頼に対応します。",
-    icon: Store,
+    name: "AliExpress",
+    sub: "海外向けEC",
+    text: "中国発の海外向けECサイトで販売されている商品の購入依頼に対応します。",
+    icon: Globe2,
   },
   {
     name: "Alibaba",
@@ -194,7 +193,7 @@ export default function PurchaseAgentPage() {
               <span className="text-blue-600">日本語でかんたんに購入</span>
             </h1>
             <p className="mt-8 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-              Taobao・1688・Xianyu・Tmall・Alibabaなどの商品について、購入手続き、出品者との連絡、中国国内での受け取り、日本への国際発送を代行します。
+              Taobao・1688・Xianyu・Alibaba・AliExpressなどの商品について、購入手続き、出品者との連絡、中国国内での受け取り、日本への国際発送を代行します。
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link

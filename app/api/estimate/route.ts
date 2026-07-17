@@ -138,8 +138,8 @@ function adminEmail(data: EstimateRequest, receivedAt: string, imageUrlsByProduc
   return `<!doctype html><html lang="ja"><body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a"><div style="max-width:720px;margin:0 auto;padding:32px 16px"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px"><p style="margin:0 0 8px;color:#2563eb;font-size:13px;font-weight:700">SK EC Pro</p><h1 style="margin:0 0 24px;font-size:24px">無料見積依頼を受け付けました</h1><table role="presentation" style="width:100%;border-collapse:collapse">${row("受付日時", receivedAt)}${row("お名前", customer.name)}${row("会社名", customer.company)}${row("メールアドレス", customer.email)}${row("電話番号", customer.phone)}${row("中国ECサイト名", customer.marketplace)}${row("お届け先都道府県", customer.prefecture)}${row("配送方法", customer.shipping)}${row("希望納期", customer.deadline)}${row("出品者への確認事項", customer.sellerQuestion)}${row("備考", customer.notes)}</table><h2 style="margin:28px 0 0;font-size:19px">商品一覧</h2>${productSections}</div></div></body></html>`;
 }
 
-function replyEmail(name: string) {
-  return `<!doctype html><html lang="ja"><body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a"><div style="max-width:640px;margin:0 auto;padding:32px 16px"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px"><p style="margin:0 0 8px;color:#2563eb;font-size:13px;font-weight:700">SK EC Pro</p><h1 style="margin:0 0 28px;font-size:24px">無料見積を受け付けました</h1><p style="margin:0 0 18px;line-height:1.8">${escapeHtml(name)} 様</p><p style="margin:0;line-height:1.9">見積依頼ありがとうございます。<br>担当者が確認後、ご連絡いたします。<br>このメールは自動送信です。</p><hr style="margin:28px 0;border:0;border-top:1px solid #e2e8f0"><p style="margin:0;color:#64748b;font-size:12px;line-height:1.7">SK EC Pro<br>Formosa Japan</p></div></div></body></html>`;
+function replyEmail(name: string, estimateNo: string) {
+  return `<!doctype html><html lang="ja"><body style="margin:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a"><div style="max-width:640px;margin:0 auto;padding:32px 16px"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px"><p style="margin:0 0 20px;line-height:1.8">${escapeHtml(name)} 様</p><p style="margin:0;line-height:1.9">この度はお見積をご依頼いただきありがとうございます。</p><p style="margin:24px 0 0;line-height:1.8">お見積番号<br><strong>${escapeHtml(estimateNo)}</strong></p><p style="margin:24px 0 0;line-height:1.9">現在、内容を確認しております。<br>見積が完成しましたらメールでご案内いたします。</p><p style="margin:24px 0 0;line-height:1.8">マイページ<br><a href="https://www.formosajapan.com/ec/login">https://www.formosajapan.com/ec/login</a></p><hr style="margin:28px 0;border:0;border-top:1px solid #e2e8f0"><p style="margin:0;color:#64748b;font-size:12px;line-height:1.7">Formosa Japan / SK EC Pro<br>contact@formosajapan.com</p></div></div></body></html>`;
 }
 
 export async function POST(request: Request) {
@@ -297,8 +297,8 @@ export async function POST(request: Request) {
         from: sender,
         to: [data.customer.email],
         replyTo: from,
-        subject: "【SK EC Pro】無料見積を受け付けました",
-        html: replyEmail(data.customer.name),
+        subject: `【SK EC Pro】お見積を受け付けました（${savedEstimateNo}）`,
+        html: replyEmail(data.customer.name, savedEstimateNo),
       },
     ]);
 

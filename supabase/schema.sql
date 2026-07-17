@@ -15,6 +15,7 @@ create table if not exists public.customers (
   address_line1 text,
   address_line2 text,
   deposit_balance integer not null default 0 check (deposit_balance >= 0),
+  admin_memo text,
   auth_user_id uuid references auth.users(id) on delete set null
 );
 

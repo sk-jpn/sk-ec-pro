@@ -136,7 +136,7 @@ export function EstimateQuoteForm({
 
           <div className="flex flex-col gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:flex-wrap sm:items-center">
             <Button type="submit" name="saveMode" value="draft" variant="outline" disabled={saving}><Save size={16} />{saving ? "保存中…" : "一時保存"}</Button>
-            <Button type="submit" name="saveMode" value="complete" disabled={saving}><Save size={16} />{saving ? "PDF生成・メール送信中…" : "見積完了"}</Button>
+            <Button type="submit" name="saveMode" value="complete" disabled={saving}><Save size={16} />{saving ? "メール送信中…" : "見積完了"}</Button>
             <Button type="button" variant="outline" asChild><a href={`/admin/estimates/${estimateId}/pdf`} target="_blank" rel="noreferrer"><FileText size={16} />PDF生成<ExternalLink size={14} /></a></Button>
             {(saveState.message || addState.message) && <p aria-live="polite" className={`text-sm ${(saveState.message ? saveState.success : addState.success) ? "text-emerald-700" : "text-red-600"}`}>{saveState.message || addState.message}</p>}
           </div>

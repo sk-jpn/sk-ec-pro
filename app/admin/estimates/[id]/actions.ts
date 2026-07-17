@@ -1,12 +1,10 @@
 "use server";
 
-import { join } from "node:path";
 import { revalidatePath } from "next/cache";
 import { Resend } from "resend";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getEstimateQuoteData } from "@/lib/estimates/quote-data";
 import { calculateQuoteTax } from "@/lib/estimates/quote-calculations";
-import { generateEstimatePdf } from "@/lib/pdf/estimate-pdf";
 import { PAYMENT_METHODS } from "@/config/payment";
 import { requireAdminUser } from "@/lib/auth/require-admin";
 import { ESTIMATE_IMAGE_BUCKET, validateEstimateImage } from "@/lib/estimates/image-files";
@@ -96,9 +94,9 @@ export async function uploadEstimateItemImages(_state: UpdateEstimateState, form
   const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
   if (typeof itemId !== "string" || !UUID_PATTERN.test(itemId) || typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId) || (imageType !== "estimate" && imageType !== "received")) return { success: false, message: "画像の送信内容が正しくありません。" };
   if (!files.length) return { success: false, message: "画像を選択してください。" };
-  if (files.length > 2) return { success: false, message: "画像は1回につき2枚まで選択してください。" };
+  if (files.length > (imageType === "received" ? 2 : 1)) return { success: false, message: imageType === "received" ? "到着商品画像は1回につき2枚までです。" : "見積商品画像は1商品につき1枚です。" };
   const table = imageType === "received" ? "received_item_images" : "estimate_item_images";
-  const limit = imageType === "received" ? 2 : 10;
+  const limit = imageType === "received" ? 2 : 1;
   const supabase = createSupabaseAdminClient();
   const { data: item, error: itemError } = await supabase.from("estimate_items").select("id, estimates!inner(estimate_no)").eq("id", itemId).eq("estimate_id", estimateId).maybeSingle();
   if (itemError || !item) return { success: false, message: "商品情報を確認できませんでした。" };
@@ -132,6 +130,7 @@ export async function uploadEstimateItemImages(_state: UpdateEstimateState, form
   }
   revalidatePath(`/admin/estimates/${estimateId}`);
   revalidatePath("/account/estimates/[id]", "page");
+  if (imageType === "received") await supabase.from("estimates").update({ status: "画像確認待ち" }).eq("id", estimateId).eq("status", "発注完了（中国物流拠点到着待ち）");
   return { success: true, message: "画像を追加しました。" };
 }
 
@@ -310,32 +309,27 @@ export async function updateEstimateQuote(
       if (!apiKey || !from) return { success: false, message: "見積内容は保存されましたが、メール送信設定が完了していません。" };
       const estimate = await getEstimateQuoteData(estimateId);
       if (!estimate) return { success: false, message: "見積内容は保存されましたが、見積データを取得できませんでした。" };
-      const pdf = await generateEstimatePdf(estimate, { logoPath: join(process.cwd(), "public", "brand", "sk-ec-pro-logo.png") });
       const sender = from.includes("<") ? from : `Formosa Inc <${from}>`;
-      const siteOrigin = new URL(process.env.SITE_URL || "https://formosajapan.com").origin;
-      const loginUrl = `${siteOrigin}/ec/login?next=/account`;
-      const approvalUrl = `${siteOrigin}/ec/estimate/${estimate.estimateNo}`;
       const resend = new Resend(apiKey);
       const { error: sendError } = await resend.emails.send({
         from: sender,
         to: [estimate.customerEmail],
         replyTo: from,
-        subject: `【SK EC Pro】お見積書 ${estimate.estimateNo}`,
-        text: `${estimate.customerName} 様\n\nお見積 ${estimate.estimateNo} が完成しました。\n添付のPDFをご確認のうえ、マイページから見積内容をご承認ください。\n\nマイページ登録・ログイン:\n${loginUrl}\n\n見積確認・承認ページ:\n${approvalUrl}\n\nご注意事項：アカウント登録後、マイページで見積を確認できない場合は、このメールに返信してください。\n\nFormosa Japan / SK EC Pro\ncontact@formosajapan.com`,
-        attachments: [{ filename: `estimate-${estimate.estimateNo}.pdf`, content: pdf }],
+        subject: "【SK EC Pro】お見積が完成しました",
+        text: `${estimate.customerName} 様\n\nお見積が完成しました。\n\nマイページより内容をご確認ください。\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
       });
       if (sendError) {
         console.error("見積完了メールの送信に失敗しました。", sendError);
-        return { success: false, message: "見積内容は保存されましたが、PDF付き見積メールを送信できませんでした。" };
+        return { success: false, message: "見積内容は保存されましたが、見積完了メールを送信できませんでした。" };
       }
     } catch (error) {
       console.error("見積完了メールの作成に失敗しました。", error);
-      return { success: false, message: "見積内容は保存されましたが、PDF付き見積メールを作成できませんでした。" };
+      return { success: false, message: "見積内容は保存されましたが、見積完了メールを作成できませんでした。" };
     }
   }
 
-  const nextStatus = saveMode === "complete" ? "お客様確認中" : "見積作成中";
-  const eligibleStatuses = saveMode === "complete" ? ["新規", "見積作成中", "お客様確認中"] : ["新規"];
+  const nextStatus = saveMode === "complete" ? "見積確認待ち" : "見積作成中";
+  const eligibleStatuses = saveMode === "complete" ? ["見積作成中", "見積確認待ち"] : ["見積作成中"];
   const { error: statusError } = await supabase
     .from("estimates")
     .update({ status: nextStatus })
@@ -349,7 +343,7 @@ export async function updateEstimateQuote(
   revalidatePath("/admin/estimates");
   revalidatePath(`/admin/estimates/${estimateId}`);
   return saveMode === "complete"
-    ? { success: true, message: "見積内容を保存し、PDF付き見積メールを送信してお客様確認中へ更新しました。" }
+    ? { success: true, message: "見積内容を保存し、見積完了メールを送信して見積確認待ちへ更新しました。" }
     : { success: true, message: "見積内容を一時保存しました。" };
 }
 
@@ -364,7 +358,7 @@ export async function confirmBankPayment(
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("estimates")
-    .update({ status: "paid", paid_at: new Date().toISOString(), payment_fee: 0 })
+    .update({ status: "発注作業中", paid_at: new Date().toISOString(), payment_fee: 0 })
     .eq("id", estimateId)
     .eq("payment_method", PAYMENT_METHODS.bankTransfer)
     .not("approved_at", "is", null)
@@ -383,4 +377,22 @@ export async function confirmBankPayment(
   revalidatePath(`/ec/estimate/${data.estimate_no}`);
   revalidatePath(`/ec/status/${data.estimate_no}`);
   return { success: true, message: "入金確認を保存しました。" };
+}
+
+export async function updateTracking(formData: FormData) {
+  await requireAdminUser();
+  const estimateId = formData.get("estimateId");
+  if (typeof estimateId !== "string" || !UUID_PATTERN.test(estimateId)) return;
+  const rows = Array.from({ length: 5 }, (_, index) => ({
+    sort_order: index + 1,
+    carrier: String(formData.get(`carrier_${index + 1}`) ?? "").trim().slice(0, 100),
+    tracking_number: String(formData.get(`tracking_${index + 1}`) ?? "").trim().slice(0, 200),
+    note: String(formData.get(`trackingNote_${index + 1}`) ?? "").trim().slice(0, 500),
+  })).filter((row) => row.carrier || row.tracking_number || row.note);
+  const supabase = createSupabaseAdminClient();
+  const { error: deleteError } = await supabase.from("estimate_tracking_numbers").delete().eq("estimate_id", estimateId);
+  if (deleteError) return;
+  if (rows.length) await supabase.from("estimate_tracking_numbers").insert(rows.map((row) => ({ ...row, estimate_id: estimateId, note: row.note || null })));
+  if (rows.some((row) => row.tracking_number)) await supabase.from("estimates").update({ status: "完了" }).eq("id", estimateId).eq("status", "日本発送待ち");
+  revalidatePath(`/admin/estimates/${estimateId}`); revalidatePath(`/account/estimates/${estimateId}`);
 }

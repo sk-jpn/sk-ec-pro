@@ -46,6 +46,7 @@ export async function updateCustomer(
   const addressLine1 = text(formData, "addressLine1", 200);
   const addressLine2 = text(formData, "addressLine2", 200);
   const depositBalance = nonNegativeMoney(formData.get("depositBalance"));
+  const adminMemo = text(formData, "adminMemo", 5000);
 
   if (typeof customerId !== "string" || !UUID_PATTERN.test(customerId)) {
     return { success: false, message: "顧客IDが正しくありません。" };
@@ -53,7 +54,7 @@ export async function updateCustomer(
   if (!name) return { success: false, message: "氏名を入力してください。" };
   if (!email || !EMAIL_PATTERN.test(email)) return { success: false, message: "正しいメールアドレスを入力してください。" };
   if (!phone || !postalCode || !prefecture || !addressLine1) return { success: false, message: "建物名・部屋番号以外の項目はすべて入力してください。" };
-  if (company === null || addressLine2 === null) return { success: false, message: "入力内容が長すぎます。" };
+  if (company === null || addressLine2 === null || adminMemo === null) return { success: false, message: "入力内容が長すぎます。" };
   if (depositBalance === null) return { success: false, message: "デポジット残高を正しく入力してください。" };
 
   const supabase = createSupabaseAdminClient();
@@ -69,6 +70,7 @@ export async function updateCustomer(
       address_line1: addressLine1,
       address_line2: addressLine2 || null,
       deposit_balance: depositBalance,
+      admin_memo: adminMemo || null,
     })
     .eq("id", customerId)
     .select("id, auth_user_id")

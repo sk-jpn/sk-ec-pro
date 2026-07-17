@@ -20,6 +20,7 @@ type CustomerEditValues = {
   addressLine1: string;
   addressLine2: string;
   depositBalance: number;
+  adminMemo: string;
 };
 
 export function CustomerEditForm({ customer }: { customer: CustomerEditValues }) {
@@ -67,6 +68,7 @@ export function CustomerEditForm({ customer }: { customer: CustomerEditValues })
           <Input name="depositBalance" type="number" min={0} max={9_999_999_999} defaultValue={customer.depositBalance || ""} className="no-number-spinner sm:max-w-xs" disabled={pending} />
           <span className="text-xs font-normal leading-5 text-slate-400">多めに入金された金額の残高を記録します。</span>
         </label>
+        <label className={`${labelClass} sm:col-span-2`}>管理者用の顧客メモ<textarea name="adminMemo" defaultValue={customer.adminMemo} maxLength={5000} rows={5} disabled={pending} className="rounded-md border border-slate-200 p-3 text-sm" /><span className="text-xs font-normal text-slate-400">お客様のマイページには表示されません。</span></label>
       </div>
       <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">
         <Button type="submit" disabled={pending} className="sm:w-fit">

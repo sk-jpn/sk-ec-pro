@@ -13,13 +13,13 @@ export const metadata: Metadata = {
 };
 
 const STEPS = [
-  { label: "受付", statuses: ["新規", "未対応"] },
-  { label: "見積作成", statuses: ["見積作成中", "対応中"] },
-  { label: "お客様確認", statuses: ["お客様確認中", "見積送付済"] },
-  { label: "発注", statuses: ["approved", "paid", "発注済", "注文確定", "購入済"] },
-  { label: "中国発送", statuses: ["中国発送", "中国倉庫"] },
-  { label: "国際配送", statuses: ["国際配送中", "国際発送済"] },
-  { label: "国内発送", statuses: ["国内発送"] },
+  { label: "見積作成", statuses: ["見積作成中"] },
+  { label: "見積確認", statuses: ["見積確認待ち"] },
+  { label: "入金待ち", statuses: ["入金待ち"] },
+  { label: "発注作業", statuses: ["発注作業中"] },
+  { label: "中国物流拠点到着待ち", statuses: ["発注完了（中国物流拠点到着待ち）"] },
+  { label: "画像確認", statuses: ["画像確認待ち"] },
+  { label: "日本発送待ち", statuses: ["日本発送待ち"] },
   { label: "完了", statuses: ["完了"] },
 ] as const;
 

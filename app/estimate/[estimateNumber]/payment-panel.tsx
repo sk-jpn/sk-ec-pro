@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { Building2, CheckCircle2, CreditCard } from "lucide-react";
 import { PAYMENT_METHODS, STRIPE_CARD_FEE_RATE, calculateCardPaymentFee, type PaymentMethod } from "@/config/payment";
-import { approveEstimate, createStripeCheckout, type ApproveEstimateState } from "./actions";
+import { approveEstimate, cancelEstimate, createStripeCheckout, type ApproveEstimateState } from "./actions";
 
 const initialState: ApproveEstimateState = { success: false, message: "" };
 const yen = (value: number) => `¥${new Intl.NumberFormat("ja-JP").format(value)}`;
@@ -16,6 +16,8 @@ export function PaymentPanel({
   paid,
   cancelled,
   approvalAllowed,
+  bankTransferDetails,
+  currentStatus,
 }: {
   estimateNumber: string;
   estimateTotal: number;
@@ -24,10 +26,13 @@ export function PaymentPanel({
   paid: boolean;
   cancelled: boolean;
   approvalAllowed: boolean;
+  bankTransferDetails: string;
+  currentStatus: string;
 }) {
   const recognizedMethod = Object.values(PAYMENT_METHODS).includes(initialPaymentMethod as PaymentMethod) ? initialPaymentMethod as PaymentMethod : PAYMENT_METHODS.bankTransfer;
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(recognizedMethod);
   const [bankState, bankAction, bankPending] = useActionState(approveEstimate, initialState);
+  const [cancelState, cancelAction, cancelPending] = useActionState(cancelEstimate, initialState);
   const [cardState, setCardState] = useState(initialState);
   const [cardPending, startCardTransition] = useTransition();
   const cardFee = paymentMethod === PAYMENT_METHODS.stripeCard ? calculateCardPaymentFee(estimateTotal) : 0;
@@ -38,10 +43,10 @@ export function PaymentPanel({
   }
   if (cancelled) return <p className="rounded-2xl border border-red-100 bg-red-50 p-5 text-center text-sm font-semibold text-red-700">キャンセルされた見積は承認・決済できません。</p>;
   if ((approved || bankState.success) && paymentMethod === PAYMENT_METHODS.bankTransfer) {
-    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center text-emerald-900"><CheckCircle2 className="mx-auto text-emerald-600" size={30} /><p className="mt-4 whitespace-pre-line text-base font-semibold leading-7">{bankState.success ? bankState.message : "ご注文を受け付けています。\n銀行振込のご案内をご確認ください。"}</p></div>;
+    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900"><CheckCircle2 className="mx-auto text-emerald-600" size={30} /><p className="mt-4 text-center text-base font-semibold">見積を承認しました。入金を確認後、発注作業を開始します。</p><div className="mt-5 rounded-xl bg-white/80 p-4"><p className="text-xs font-bold text-emerald-700">銀行振込先</p><p className="mt-2 whitespace-pre-wrap text-sm leading-7">{bankTransferDetails}</p></div></div>;
   }
   if (!approvalAllowed) {
-    return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><p className="font-semibold text-amber-900">現在、見積を作成しています</p><p className="mt-2 text-sm leading-6 text-amber-700">管理者が見積作成を完了するまで、承認・決済はできません。</p></div>;
+    return <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center"><p className="font-semibold text-amber-900">{currentStatus === "見積作成中" ? "現在、見積を作成しています" : `現在のステータス：${currentStatus}`}</p><p className="mt-2 text-sm leading-6 text-amber-700">{currentStatus === "見積作成中" ? "管理者が見積作成を完了するまで、承認・決済はできません。" : "進捗や確認事項はメッセージからお問い合わせいただけます。"}</p></div>;
   }
 
   const startCardCheckout = () => startCardTransition(async () => {
@@ -77,6 +82,8 @@ export function PaymentPanel({
         <p className="mt-4 text-xs leading-6 text-slate-400">手続きを進めると、この見積内容で注文が確定します。</p>
         {(bankState.message && !bankState.success) && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{bankState.message}</p>}
         {cardState.message && !cardState.success && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{cardState.message}</p>}
+        <form action={cancelAction} className="mt-5"><input type="hidden" name="estimateNumber" value={estimateNumber} /><button type="submit" disabled={bankPending || cardPending || cancelPending} className="text-sm font-semibold text-red-600 underline underline-offset-4 disabled:opacity-50">{cancelPending ? "キャンセル処理中…" : "この見積をキャンセル"}</button></form>
+        {cancelState.message && <p className={`mt-3 text-sm ${cancelState.success ? "text-slate-600" : "text-red-600"}`}>{cancelState.message}</p>}
       </div>
     </div>
   );
