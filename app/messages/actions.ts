@@ -57,9 +57,12 @@ export async function sendCaseMessage(_state: SendMessageState, formData: FormDa
   const from = process.env.RESEND_FROM_EMAIL;
   if (apiKey && from) {
     try {
-      const { data: estimate } = await admin.from("estimates").select("estimate_no, customers(email)").eq("id", estimateId).maybeSingle();
+      const { data: estimate } = await admin.from("estimates").select("estimate_no, customer_id").eq("id", estimateId).maybeSingle();
       const estimateNo = estimate?.estimate_no ?? estimateId;
-      const customerEmail = estimate?.customers?.email;
+      const { data: customer } = estimate
+        ? await admin.from("customers").select("email").eq("id", estimate.customer_id).maybeSingle()
+        : { data: null };
+      const customerEmail = customer?.email;
       const resend = new Resend(apiKey);
       if (senderType === "customer") {
         await resend.emails.send({
@@ -97,4 +100,3 @@ export async function sendCaseMessage(_state: SendMessageState, formData: FormDa
   revalidatePath(`/account/estimates/${estimateId}`);
   return { success: true, message: "メッセージを送信しました。" };
 }
-
