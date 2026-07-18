@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { protectFormSubmission } from "@/lib/forms/submission-protection";
 
 function text(value: unknown, max: number) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
 function escapeHtml(value: string) { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
@@ -8,6 +9,8 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return Response.json({ message: "送信内容を確認できませんでした。" }, { status: 400 }); }
   if (!body || typeof body !== "object") return Response.json({ message: "入力内容を確認してください。" }, { status: 400 });
   const record = body as Record<string, unknown>;
+  const protectionFailure = await protectFormSubmission(request, "contact", text(record.turnstileToken, 2048), text(record.website, 500));
+  if (protectionFailure) return Response.json({ message: protectionFailure.message }, { status: protectionFailure.status });
   const name = text(record.name, 100); const email = text(record.email, 254); const topic = text(record.topic, 100); const message = text(record.message, 5000);
   if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) return Response.json({ message: "必須項目を正しく入力してください。" }, { status: 400 });
   const apiKey = process.env.RESEND_API_KEY; const from = process.env.RESEND_FROM_EMAIL;

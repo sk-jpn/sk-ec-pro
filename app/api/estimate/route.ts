@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ESTIMATE_IMAGE_BUCKET, MAX_IMAGES_PER_PRODUCT, validateEstimateImage } from "@/lib/estimates/image-files";
+import { protectFormSubmission } from "@/lib/forms/submission-protection";
 
 const MAX_PRODUCTS = 10;
 
@@ -152,6 +153,14 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ message: "送信内容を確認できませんでした。入力画面から再度お試しください。" }, { status: 400 });
   }
+
+  const protectionFailure = await protectFormSubmission(
+    request,
+    "estimate",
+    text(formData.get("turnstileToken"), 2048),
+    text(formData.get("website"), 500),
+  );
+  if (protectionFailure) return Response.json({ message: protectionFailure.message }, { status: protectionFailure.status });
 
   const data = parseRequest(body);
   if (!data) {
