@@ -75,7 +75,7 @@ export async function sendCaseMessage(_state: SendMessageState, formData: FormDa
 案件番号: ${estimateNo}
 送信者: お客様
 
-マイページにログインしてご確認ください。`,
+マイページにログインしてご確認ください。\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
         });
       } else if (customerEmail) {
         await resend.emails.send({
@@ -86,9 +86,9 @@ export async function sendCaseMessage(_state: SendMessageState, formData: FormDa
           text: `新しいメッセージを受信しました。
 
 案件番号: ${estimateNo}
-送信者: 管理者
+送信者: Formosa Inc
 
-マイページにログインしてご確認ください。`,
+マイページにログインしてご確認ください。\n\nマイページ\nhttps://www.formosajapan.com/ec/login`,
         });
       }
     } catch (sendError) {
