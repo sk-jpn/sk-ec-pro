@@ -1,6 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
+  "crons": [
+    { "path": "/ec/api/cron/stay-calendar-sync", "schedule": "0 3,15 * * *" }
+  ],
   "redirects": [
     { "source": "/", "destination": "/ec", "permanent": true },
     { "source": "/estimate/:path*", "destination": "/ec/estimate/:path*", "permanent": true },
