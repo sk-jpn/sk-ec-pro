@@ -1,7 +1,9 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireStayUser } from "@/lib/stay/auth";
 import { StaySearchFlow } from "./search-flow";
 
 export default async function SearchPage() {
+  await requireStayUser("/stay/search");
   const admin = createSupabaseAdminClient();
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const endDate = new Date(`${today}T00:00:00Z`); endDate.setUTCMonth(endDate.getUTCMonth() + 18); const availabilityEnd = endDate.toISOString().slice(0, 10);

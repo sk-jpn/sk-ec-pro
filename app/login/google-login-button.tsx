@@ -17,7 +17,8 @@ const providers: { id: OAuthProvider; label: string; icon: React.ReactNode }[] =
   { id: "azure", label: "Microsoft", icon: <span aria-hidden="true" className="grid grid-cols-2 gap-0.5">{["#f25022", "#7fba00", "#00a4ef", "#ffb900"].map((color) => <i key={color} className="size-2" style={{ backgroundColor: color }} />)}</span> },
 ];
 
-function LoginButtons({ next, enabledProviders }: { next: "/admin" | "/account" | "/estimate" | "/stay/mypage"; enabledProviders: OAuthProvider[] }) {
+type LoginDestination = "/admin" | "/account" | "/estimate" | "/stay/mypage" | "/stay/search";
+function LoginButtons({ next, enabledProviders }: { next: LoginDestination; enabledProviders: OAuthProvider[] }) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");
 
@@ -44,10 +45,10 @@ function LoginButtons({ next, enabledProviders }: { next: "/admin" | "/account" 
   </div>;
 }
 
-export function OAuthLoginButtons({ next = "/account" }: { next?: "/account" | "/estimate" | "/stay/mypage" }) {
+export function OAuthLoginButtons({ next = "/account" }: { next?: Exclude<LoginDestination, "/admin"> }) {
   return <LoginButtons next={next} enabledProviders={["google", "azure"]} />;
 }
 
-export function GoogleLoginButton({ next = "/account" }: { next?: "/admin" | "/account" | "/estimate" | "/stay/mypage" }) {
+export function GoogleLoginButton({ next = "/account" }: { next?: LoginDestination }) {
   return <LoginButtons next={next} enabledProviders={["google"]} />;
 }

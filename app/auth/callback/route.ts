@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const requestedNext = requestUrl.searchParams.get("next");
   const mode = requestUrl.searchParams.get("mode");
-  const next = requestedNext === "/account" || requestedNext === "/estimate" || requestedNext === "/stay/mypage" ? requestedNext : "/admin";
-  const loginPath = next === "/admin" ? "/admin/login" : next === "/stay/mypage" ? "/stay/login" : "/login";
+  const next = requestedNext === "/account" || requestedNext === "/estimate" || requestedNext === "/stay/mypage" || requestedNext === "/stay/search" ? requestedNext : "/admin";
+  const loginPath = next === "/admin" ? "/admin/login" : next.startsWith("/stay/") ? "/stay/login" : "/login";
   const destinationPath = withBasePath(next);
   const destination = new URL(destinationPath, requestUrl.origin);
 
@@ -24,8 +24,8 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
+  const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error || !sessionData.session) {
     return NextResponse.redirect(new URL(`${withBasePath(loginPath)}?error=oauth`, requestUrl.origin));
   }
 
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
     }
   }
 
-  if (next === "/stay/mypage") {
+  if (next === "/stay/mypage" || next === "/stay/search") {
     const admin = createSupabaseAdminClient();
     const { data: existingProfile, error: lookupError } = await admin.from("stay_customers").select("id").eq("auth_user_id", user.id).maybeSingle();
     if (lookupError) {
@@ -130,6 +130,13 @@ export async function GET(request: Request) {
       console.error("宿泊プロフィールの準備に失敗しました。", profileError);
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=configuration`, requestUrl.origin));
+    }
+    if (mode === "stay_signup") {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("宿泊アカウント作成後のログインセッションを確認できませんでした。");
+        return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=session`, requestUrl.origin));
+      }
     }
   }
 

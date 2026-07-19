@@ -6,6 +6,7 @@ import { ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/config/site";
+import { StayLocalized } from "../stay-language";
 
 const contacts = [
   { id: "whatsapp", label: "WhatsApp", qr: "/stay/whatsapp.png", href: "https://wa.me/qr/RL5DXGDIHEBXH1", color: "text-[#18a957]", active: "border-[#25D366] bg-[#25D366]/10 text-[#128C4A]" },
@@ -16,7 +17,7 @@ const contacts = [
 export function OwnerContact() {
   const [selectedId, setSelectedId] = useState<(typeof contacts)[number]["id"]>("whatsapp");
   const selected = contacts.find((contact) => contact.id === selectedId) ?? contacts[0];
-  return <section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  return <StayLocalized><section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white p-5 sm:p-6">
       <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-emerald-600 text-white"><MessageCircle size={20} /></span><div><h2 className="text-lg font-bold">オーナーと連絡を取る</h2><p className="mt-1 text-sm text-slate-500">使いやすい連絡方法を選択してください。</p></div></div>
     </div>
@@ -29,5 +30,5 @@ export function OwnerContact() {
         <div className="mx-auto w-full max-w-[280px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"><Image src={withBasePath(selected.qr)} width={420} height={420} alt={`${selected.label}の連絡先追加QRコード`} className="h-auto w-full" priority={selected.id === "whatsapp"} /></div>
       </div>
     </div>
-  </section>;
+  </section></StayLocalized>;
 }
