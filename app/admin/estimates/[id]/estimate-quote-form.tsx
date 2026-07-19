@@ -113,7 +113,7 @@ export function EstimateQuoteForm({
               {[
                 [customerDepositBalance > 0 ? `デポジット（前回残高：${yen(customerDepositBalance)}）` : "デポジット", "deposit"],
                 ["国際送料", "internationalShippingFee"],
-                ["代行購入", "agencyFee"],
+                ["購入代行", "agencyFee"],
                 ["その他の費用（前回不足金等）", "otherFee"],
                 ["割引", "discount"],
               ].map(([label, name]) => <label key={name} className="grid grid-cols-[1fr_9rem] items-center gap-4 text-sm font-medium text-slate-600"><span>{label}</span><input type="number" name={name} min={0} max={9_999_999_999} step={1} value={fees[name as keyof Fees] || ""} onChange={(event) => updateFee(name as keyof Fees, event.target.value)} disabled={saving} className={`${inputClass} no-number-spinner text-right`} /></label>)}
@@ -125,7 +125,7 @@ export function EstimateQuoteForm({
               <div className="space-y-2 py-4 text-xs text-slate-500">
                 <p className="flex justify-between"><span>デポジット</span><span>{yen(fees.deposit)}</span></p>
                 <p className="flex justify-between"><span>国際送料</span><span>{yen(fees.internationalShippingFee)}</span></p>
-                <p className="flex justify-between"><span>代行購入</span><span>{yen(fees.agencyFee)}</span></p>
+                <p className="flex justify-between"><span>購入代行</span><span>{yen(fees.agencyFee)}</span></p>
                 <p className="flex justify-between"><span>その他の費用</span><span>{yen(fees.otherFee)}</span></p>
                 <p className="flex justify-between"><span>割引</span><span className="text-red-600">-{yen(fees.discount)}</span></p>
                 <p className="flex justify-between"><span>消費税（{selectedTaxRate}%）</span><span>{yen(calculatedTax)}</span></p>

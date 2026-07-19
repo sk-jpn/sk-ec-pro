@@ -25,7 +25,7 @@ export function AdminSidebar() {
     <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible lg:px-4 lg:py-4" aria-label="管理画面ナビゲーション">
       <NavigationLink href="/admin" label="Dashboard" icon={LayoutDashboard} active={pathname === "/admin"} />
       <div className="flex shrink-0 items-center gap-1 rounded-xl border border-slate-100 bg-slate-50/70 p-1 lg:block lg:w-full lg:p-1.5">
-        <div className="flex min-h-10 shrink-0 items-center gap-3 px-3 text-sm font-bold text-slate-800"><ShoppingCart size={18} className="text-blue-600" />代行購入管理</div>
+        <div className="flex min-h-10 shrink-0 items-center gap-3 px-3 text-sm font-bold text-slate-800"><ShoppingCart size={18} className="text-blue-600" />購入代行管理</div>
         <div className="flex gap-1 lg:mt-1 lg:flex-col">{purchaseNavigation.map(({ href, label, icon }) => <NavigationLink key={href} href={href} label={label} icon={icon} nested active={pathname.startsWith(href)} />)}</div>
       </div>
       <NavigationLink href="/admin/stay" label="宿泊管理" icon={BedDouble} active={pathname.startsWith("/admin/stay")} />

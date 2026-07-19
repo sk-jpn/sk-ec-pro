@@ -148,7 +148,7 @@ export async function generateEstimatePdf(data: EstimatePdfData, options: Estima
     ["商品合計", productTotal],
     ["デポジット", data.deposit],
     ["国際送料", data.internationalShippingFee],
-    ["代行購入", data.agencyFee],
+    ["購入代行", data.agencyFee],
     ["その他の費用（前回不足金等）", data.otherFee],
     ["割引", -data.discount],
     [`消費税（${data.taxRate}%）`, data.tax],

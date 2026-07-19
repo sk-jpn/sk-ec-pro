@@ -71,7 +71,7 @@ export default async function CustomerEstimatePage({ params }: PageProps<"/estim
   const charges = [
     ["デポジット", estimate.deposit],
     ["国際送料", estimate.international_shipping_fee],
-    ["代行購入", estimate.agency_fee],
+    ["購入代行", estimate.agency_fee],
     ["その他の費用（前回不足金等）", estimate.other_fee],
   ] as const;
 
