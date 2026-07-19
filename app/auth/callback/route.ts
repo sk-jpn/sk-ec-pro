@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const CUSTOMER_SIGNUP_COOKIE = "sk_ec_customer_signup";
+const STAY_SIGNUP_COOKIE = "sk_ec_stay_signup";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -98,12 +99,33 @@ export async function GET(request: Request) {
 
   if (next === "/stay/mypage") {
     const admin = createSupabaseAdminClient();
-    const { error: profileError } = await admin.from("stay_customers").upsert({
-      auth_user_id: user.id,
-      name: user.user_metadata.full_name ?? user.user_metadata.name ?? user.email ?? "お客様",
-      email: user.email ?? "",
-      last_login_at: new Date().toISOString(),
-    }, { onConflict: "auth_user_id" });
+    const { data: existingProfile, error: lookupError } = await admin.from("stay_customers").select("id").eq("auth_user_id", user.id).maybeSingle();
+    if (lookupError) {
+      console.error("宿泊プロフィールの確認に失敗しました。", lookupError);
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=configuration`, requestUrl.origin));
+    }
+    let profileError = null;
+    if (existingProfile) {
+      ({ error: profileError } = await admin.from("stay_customers").update({ last_login_at: new Date().toISOString() }).eq("id", existingProfile.id));
+    } else if (mode === "stay_signup") {
+      const cookieStore = await cookies();
+      const rawSignup = cookieStore.get(STAY_SIGNUP_COOKIE)?.value;
+      cookieStore.delete(STAY_SIGNUP_COOKIE);
+      let signup: { name: string; email: string } | null = null;
+      try {
+        const parsed = JSON.parse(Buffer.from(rawSignup ?? "", "base64url").toString("utf8")) as { name?: unknown; email?: unknown };
+        if (typeof parsed.name === "string" && typeof parsed.email === "string") signup = { name: parsed.name.trim(), email: parsed.email.trim().toLowerCase() };
+      } catch { signup = null; }
+      if (!signup?.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signup.email)) {
+        await supabase.auth.signOut();
+        return NextResponse.redirect(new URL(`${withBasePath("/stay/signup")}?error=signup_expired`, requestUrl.origin));
+      }
+      ({ error: profileError } = await admin.from("stay_customers").insert({ auth_user_id: user.id, name: signup.name, email: signup.email, last_login_at: new Date().toISOString() }));
+    } else {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=account_unregistered`, requestUrl.origin));
+    }
     if (profileError) {
       console.error("宿泊プロフィールの準備に失敗しました。", profileError);
       await supabase.auth.signOut();
