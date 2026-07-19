@@ -13,8 +13,8 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const requestedNext = requestUrl.searchParams.get("next");
   const mode = requestUrl.searchParams.get("mode");
-  const next = requestedNext === "/account" || requestedNext === "/estimate" ? requestedNext : "/admin";
-  const loginPath = next === "/admin" ? "/admin/login" : "/login";
+  const next = requestedNext === "/account" || requestedNext === "/estimate" || requestedNext === "/stay/mypage" ? requestedNext : "/admin";
+  const loginPath = next === "/admin" ? "/admin/login" : next === "/stay/mypage" ? "/stay/login" : "/login";
   const destinationPath = withBasePath(next);
   const destination = new URL(destinationPath, requestUrl.origin);
 
@@ -93,6 +93,21 @@ export async function GET(request: Request) {
       await supabase.auth.signOut();
       await admin.auth.admin.deleteUser(user.id);
       return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=account_unregistered`, requestUrl.origin));
+    }
+  }
+
+  if (next === "/stay/mypage") {
+    const admin = createSupabaseAdminClient();
+    const { error: profileError } = await admin.from("stay_customers").upsert({
+      auth_user_id: user.id,
+      name: user.user_metadata.full_name ?? user.user_metadata.name ?? user.email ?? "お客様",
+      email: user.email ?? "",
+      last_login_at: new Date().toISOString(),
+    }, { onConflict: "auth_user_id" });
+    if (profileError) {
+      console.error("宿泊プロフィールの準備に失敗しました。", profileError);
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=configuration`, requestUrl.origin));
     }
   }
 
