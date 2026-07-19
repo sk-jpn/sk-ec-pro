@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { STAY_STATUSES } from "@/lib/stay/presentation";
 import { AvailabilityCalendar } from "./availability-calendar";
+import { CalendarFilterForm } from "./calendar-filter-form";
 
 const BLOCKING_STATUSES = ["pending_admin_review", "awaiting_guest_confirmation", "confirmed", "payment_pending", "paid", "checked_in"];
 
@@ -54,7 +55,7 @@ export default async function StayCalendarPage({ searchParams }: { searchParams:
   return <>
     <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
       <div><p className="text-xs font-bold uppercase tracking-[.2em] text-emerald-600">Availability Calendar</p><h1 className="mt-2 text-3xl font-bold">宿泊カレンダー</h1><p className="mt-2 text-sm text-slate-500">リスティングごとの予約可否を月間表示します。</p></div>
-      <form className="flex flex-col gap-2 sm:flex-row"><input type="hidden" name="month" value={month} /><select name="listingId" defaultValue={selectedId} className="min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm" aria-label="リスティング">{listings?.map((listing) => <option value={listing.id} key={listing.id}>{listing.code}・{listing.name}</option>)}</select><button className="min-h-10 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white">表示</button></form>
+      <CalendarFilterForm month={month} selectedId={selectedId} listings={listings ?? []} />
     </div>
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
       <div className="mb-5 flex items-center justify-between"><Link href={queryFor(adjacentMonth(month, -1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="前月"><ChevronLeft size={19} /></Link><div className="text-center"><p className="text-xl font-bold">{year}年{monthNumber}月</p><p className="mt-1 text-sm font-medium text-slate-500">{selected ? `${selected.code}・${selected.name}` : "リスティング未登録"}</p></div><Link href={queryFor(adjacentMonth(month, 1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="翌月"><ChevronRight size={19} /></Link></div>
