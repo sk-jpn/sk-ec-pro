@@ -27,6 +27,20 @@ export async function POST(request: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.payment_status !== "paid") return Response.json({ received: true });
+  if (session.metadata?.paymentType === "stay") {
+    const bookingId = session.metadata.bookingId;
+    const bookingNumber = session.metadata.bookingNumber;
+    const expectedAmount = Number(session.metadata.expectedAmount);
+    if (!bookingId || !bookingNumber || !Number.isSafeInteger(expectedAmount) || expectedAmount < 1) return Response.json({ message: "宿泊予約情報がありません。" }, { status: 400 });
+    if (session.amount_total !== expectedAmount || session.currency !== "jpy") return Response.json({ message: "宿泊決済金額が一致しません。" }, { status: 400 });
+    const supabase = createSupabaseAdminClient();
+    const { data: booking, error: lookupError } = await supabase.from("stay_bookings").select("id,total_amount,payment_status,stripe_checkout_session_id").eq("id", bookingId).eq("booking_number", bookingNumber).maybeSingle();
+    if (lookupError || !booking || booking.total_amount !== expectedAmount || booking.stripe_checkout_session_id !== session.id) return Response.json({ message: "宿泊予約が一致しません。" }, { status: 400 });
+    if (booking.payment_status === "paid") return Response.json({ received: true });
+    const { error: updateError } = await supabase.from("stay_bookings").update({ payment_method: "stripe_card", payment_status: "paid", status: "paid", paid_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", bookingId).eq("stripe_checkout_session_id", session.id).neq("payment_status", "paid");
+    if (updateError) { console.error("宿泊Stripe決済完了の保存に失敗しました。", updateError); return Response.json({ message: "宿泊決済状態を保存できませんでした。" }, { status: 500 }); }
+    return Response.json({ received: true });
+  }
   const estimateId = session.metadata?.estimateId;
   const estimateNumber = session.metadata?.estimateNumber;
   if (!estimateId || !estimateNumber) return Response.json({ message: "見積情報がありません。" }, { status: 400 });
