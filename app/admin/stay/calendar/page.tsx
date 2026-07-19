@@ -49,7 +49,9 @@ export default async function StayCalendarPage({ searchParams }: { searchParams:
     const blockingManualBlocks = dayBlocks.filter((block) => !block.calendar_feed_id);
     const past = date < today;
     const listingClosed = !selected?.is_active || !selected?.booking_enabled;
-    return { day, date, dayBookings, dayBlocks, available: !past && !listingClosed && dayBookings.length === 0 && blockingManualBlocks.length === 0, past, listingClosed };
+    const available = !listingClosed && dayBookings.length === 0 && dayBlocks.length === 0;
+    const selectable = !listingClosed && dayBookings.length === 0 && blockingManualBlocks.length === 0;
+    return { day, date, dayBookings, dayBlocks, available, selectable, past, listingClosed };
   });
   const queryFor = (targetMonth: string) => `/admin/stay/calendar?month=${targetMonth}${selectedId ? `&listingId=${selectedId}` : ""}`;
 
@@ -60,7 +62,7 @@ export default async function StayCalendarPage({ searchParams }: { searchParams:
     </div>
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
       <div className="mb-5 flex items-center justify-between"><Link href={queryFor(adjacentMonth(month, -1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="前月"><ChevronLeft size={19} /></Link><div className="text-center"><p className="text-xl font-bold">{year}年{monthNumber}月</p><p className="mt-1 text-sm font-medium text-slate-500">{selected ? `${selected.code}・${selected.name}` : "リスティング未登録"}</p></div><Link href={queryFor(adjacentMonth(month, 1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="翌月"><ChevronRight size={19} /></Link></div>
-      {selectedId && <AvailabilityCalendar days={calendarDays.map((entry) => entry ? { day: entry.day, date: entry.date, available: entry.available, past: entry.past, listingClosed: entry.listingClosed, bookings: entry.dayBookings.map((booking) => ({ id: booking.id, number: booking.booking_number, status: STAY_STATUSES[booking.status] ?? booking.status })), blocks: entry.dayBlocks.map((block) => ({ id: block.id, label: block.calendar_feed_id ? "Airbnb予約" : block.reason, reason: block.reason, isAirbnb: Boolean(block.calendar_feed_id) })) } : null)} today={today} listingId={selectedId} maxGuests={selected?.max_guests ?? 1} customers={customers ?? []} />}
+      {selectedId && <AvailabilityCalendar days={calendarDays.map((entry) => entry ? { day: entry.day, date: entry.date, available: entry.available, selectable: entry.selectable, past: entry.past, listingClosed: entry.listingClosed, bookings: entry.dayBookings.map((booking) => ({ id: booking.id, number: booking.booking_number, status: STAY_STATUSES[booking.status] ?? booking.status })), blocks: entry.dayBlocks.map((block) => ({ id: block.id, label: block.calendar_feed_id ? "Airbnb予約" : block.reason, reason: block.reason, isAirbnb: Boolean(block.calendar_feed_id) })) } : null)} today={today} listingId={selectedId} maxGuests={selected?.max_guests ?? 1} customers={customers ?? []} />}
     </div>
   </>;
 }
