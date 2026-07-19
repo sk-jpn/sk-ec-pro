@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { stayLocaleLabels, stayLocales, translateStayText, type StayLocale } from "@/lib/stay/i18n";
 
@@ -18,5 +18,26 @@ function localize(node:React.ReactNode,locale:StayLocale):React.ReactNode{
 }
 
 export function StayLocalized({children}:{children:React.ReactNode}){const locale=useStayLocale();return <>{localize(children,locale)}</>}
-export function StayLanguageProvider({locale,children}:{locale:StayLocale;children:React.ReactNode}){return <StayLocaleContext.Provider value={locale}><StayLocalized>{children}</StayLocalized></StayLocaleContext.Provider>}
+
+function StayDomLocalized({locale,children}:{locale:StayLocale;children:React.ReactNode}){
+  const rootRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const root=rootRef.current;if(!root||locale==="ja")return;
+    const translateNode=(rootNode:Node)=>{
+      if(rootNode.nodeType===Node.TEXT_NODE){const value=rootNode.nodeValue;if(value){const translated=translateStayText(value,locale);if(translated!==value)rootNode.nodeValue=translated}return}
+      if(!(rootNode instanceof Element))return;
+      if(rootNode.matches("script,style,[data-stay-no-translate]"))return;
+      for(const attribute of ["placeholder","aria-label","title"]){const value=rootNode.getAttribute(attribute);if(value){const translated=translateStayText(value,locale);if(translated!==value)rootNode.setAttribute(attribute,translated)}}
+      const walker=document.createTreeWalker(rootNode,NodeFilter.SHOW_TEXT);let textNode=walker.nextNode();while(textNode){const parent=textNode.parentElement;if(parent&&!parent.matches("script,style,[data-stay-no-translate],[data-stay-no-translate] *")){const value=textNode.nodeValue;if(value){const translated=translateStayText(value,locale);if(translated!==value)textNode.nodeValue=translated}}textNode=walker.nextNode()}
+      rootNode.querySelectorAll("[placeholder],[aria-label],[title]").forEach((element)=>{if(element.matches("[data-stay-no-translate],[data-stay-no-translate] *"))return;for(const attribute of ["placeholder","aria-label","title"]){const value=element.getAttribute(attribute);if(value){const translated=translateStayText(value,locale);if(translated!==value)element.setAttribute(attribute,translated)}}});
+    };
+    translateNode(root);
+    const observer=new MutationObserver((mutations)=>{for(const mutation of mutations){if(mutation.type==="characterData")translateNode(mutation.target);else mutation.addedNodes.forEach(translateNode)}});
+    observer.observe(root,{subtree:true,childList:true,characterData:true});
+    return()=>observer.disconnect();
+  },[locale]);
+  return <div ref={rootRef} className="contents"><StayLocalized>{children}</StayLocalized></div>;
+}
+
+export function StayLanguageProvider({locale,children}:{locale:StayLocale;children:React.ReactNode}){return <StayLocaleContext.Provider value={locale}><StayDomLocalized locale={locale}>{children}</StayDomLocalized></StayLocaleContext.Provider>}
 export function StayLanguageSwitcher(){const locale=useStayLocale();const router=useRouter();return <label className="shrink-0"><span className="sr-only">Language</span><select value={locale} onChange={(event)=>{document.cookie=`stay_locale=${event.target.value}; Path=/; Max-Age=31536000; SameSite=Lax`;router.refresh()}} className="min-h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium" aria-label="Language">{stayLocales.map(value=><option value={value} key={value}>{stayLocaleLabels[value]}</option>)}</select></label>}
