@@ -1,0 +1,30 @@
+name: Stay calendar sync
+
+on:
+  schedule:
+    # UTC 03:00 / 15:00 = JST 12:00 / 00:00
+    - cron: "0 3,15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stay-calendar-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sync Airbnb calendars
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET"
+          curl --fail-with-body --silent --show-error \
+            --retry 2 \
+            --max-time 60 \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            https://www.formosajapan.com/ec/api/cron/stay-calendar-sync
