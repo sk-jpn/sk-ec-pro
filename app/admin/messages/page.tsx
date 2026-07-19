@@ -4,6 +4,8 @@ import { PageHeader } from "../admin-ui";
 import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminMessagesPage() {
   const { data, error } = await createSupabaseAdminClient().from("estimate_messages").select("estimate_id, body, created_at, sender_type, estimates(estimate_no, customers(name))").order("created_at", { ascending: false });
   if (error) throw new Error(`メッセージ一覧を取得できませんでした: ${error.message}`);

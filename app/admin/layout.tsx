@@ -4,6 +4,8 @@ import { requireAdminUser } from "@/lib/auth/require-admin";
 import { AdminAccountBar } from "./admin-account-bar";
 import { AdminSidebar } from "./admin-sidebar";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: { default: "Dashboard｜SK EC Pro Admin", template: "%s｜SK EC Pro Admin" }, robots: { index: false, follow: false } };
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   if ((await headers()).get("x-sk-admin-login") === "1") return children;
