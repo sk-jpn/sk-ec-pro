@@ -23,5 +23,5 @@ export function isAdminUser(user: Pick<User, "email">) {
 
 export function getGoogleAccountName(user: User) {
   const metadata = user.user_metadata;
-  return metadata.full_name ?? metadata.name ?? user.email ?? "Googleアカウント";
+  return metadata.full_name ?? metadata.name ?? user.email ?? "認証アカウント";
 }

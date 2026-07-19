@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       .limit(1)
       .maybeSingle();
     if (linkedError) {
-      console.error("Googleログイン対象の顧客確認に失敗しました。", linkedError);
+      console.error("ログイン対象の顧客確認に失敗しました。", linkedError);
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL(`${withBasePath("/login")}?error=oauth`, requestUrl.origin));
     }
