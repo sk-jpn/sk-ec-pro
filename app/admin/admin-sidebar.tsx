@@ -6,7 +6,7 @@ import { BedDouble, LayoutDashboard, Settings, ShoppingCart } from "lucide-react
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/config/site";
 
-const purchasePaths = ["/admin/purchase", "/admin/estimates", "/admin/customers", "/admin/orders", "/admin/shipping"];
+const purchasePaths = ["/admin/purchase", "/admin/estimates", "/admin/messages", "/admin/customers", "/admin/orders", "/admin/shipping"];
 
 function NavigationLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: typeof LayoutDashboard; active: boolean }) {
   return <Link href={href} className={cn("flex min-h-11 shrink-0 items-center gap-3 rounded-lg px-3 text-sm font-medium transition", active ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950")}><Icon size={18} />{label}</Link>;

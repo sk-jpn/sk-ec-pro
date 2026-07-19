@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, ClipboardList, Truck, Users } from "lucide-react";
+import { Boxes, ClipboardList, MessageSquare, Truck, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -7,14 +7,16 @@ export const metadata = { title: "購入代行管理" };
 
 export default async function PurchaseAdminPage() {
   const supabase = createSupabaseAdminClient();
-  const [estimates, customers, orders, shipping] = await Promise.all([
+  const [estimates, messages, customers, orders, shipping] = await Promise.all([
     supabase.from("estimates").select("id", { count: "exact", head: true }),
+    supabase.from("estimate_messages").select("id", { count: "exact", head: true }),
     supabase.from("customers").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("id", { count: "exact", head: true }).in("shipping_status", ["受付", "画像確認待ち", "日本発送待ち"]),
   ]);
   const links = [
     { href: "/admin/estimates", label: "見積管理", description: "見積の作成・確認・進行管理", value: `${estimates.count ?? 0}件`, icon: ClipboardList },
+    { href: "/admin/messages", label: "メッセージ", description: "購入代行案件のお客様対応", value: `${messages.count ?? 0}件`, icon: MessageSquare },
     { href: "/admin/customers", label: "顧客管理", description: "購入代行顧客とアカウント管理", value: `${customers.count ?? 0}名`, icon: Users },
     { href: "/admin/orders", label: "注文管理", description: "入金後の発注・注文状況", value: `${orders.count ?? 0}件`, icon: Boxes },
     { href: "/admin/shipping", label: "発送管理", description: "商品到着・国際配送・日本発送", value: `${shipping.count ?? 0}件`, icon: Truck },

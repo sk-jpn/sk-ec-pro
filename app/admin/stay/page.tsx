@@ -1,2 +1,43 @@
-import Link from "next/link";import { createSupabaseAdminClient } from "@/lib/supabase/admin";import { Card,CardContent } from "@/components/ui/card";
-export default async function StayAdmin(){const a=createSupabaseAdminClient();const [{count:bookings},{count:customers},{count:listings}]=await Promise.all([a.from('stay_bookings').select('*',{count:'exact',head:true}),a.from('stay_customers').select('*',{count:'exact',head:true}),a.from('stay_listings').select('*',{count:'exact',head:true})]);const links=[['/admin/stay/bookings','予約管理',bookings],['/admin/stay/calendar','宿泊カレンダー','月表示'],['/admin/stay/listings','リスティング管理',listings],['/admin/stay/customers','宿泊顧客',customers],['/admin/stay/messages','メッセージ','予約別'],['/admin/stay/pricing','料金ルール','曜日・期間'],['/admin/stay/blocked-dates','ブロック日','Airbnb予約等'],['/admin/stay/settings','宿泊設定','受付・案内']];return <><p className="text-xs font-bold uppercase tracking-[.2em] text-emerald-600">Stay Management</p><h1 className="mt-2 text-3xl font-bold">宿泊管理</h1><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{links.map(([h,l,v])=><Link href={String(h)} key={String(h)}><Card className="h-full hover:border-emerald-300"><CardContent className="p-6"><h2 className="font-bold">{l}</h2><p className="mt-2 text-sm text-slate-500">{v??0}</p></CardContent></Card></Link>)}</div></>}
+import Link from "next/link";
+import { BedDouble, CalendarDays, CalendarOff, ClipboardList, MessageSquare, Settings, Tags, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+
+export const metadata = { title: "宿泊管理" };
+
+export default async function StayAdminPage() {
+  const supabase = createSupabaseAdminClient();
+  const [bookings, customers, listings, messages, pricingRules, blockedDates] = await Promise.all([
+    supabase.from("stay_bookings").select("id", { count: "exact", head: true }),
+    supabase.from("stay_customers").select("id", { count: "exact", head: true }),
+    supabase.from("stay_listings").select("id", { count: "exact", head: true }),
+    supabase.from("stay_message_threads").select("id", { count: "exact", head: true }),
+    supabase.from("stay_pricing_rules").select("id", { count: "exact", head: true }),
+    supabase.from("stay_blocked_dates").select("id", { count: "exact", head: true }),
+  ]);
+  const links = [
+    { href: "/admin/stay/bookings", label: "予約管理", description: "宿泊予約の確認・承認・進行管理", value: `${bookings.count ?? 0}件`, icon: ClipboardList },
+    { href: "/admin/stay/calendar", label: "宿泊カレンダー", description: "予約とブロック日の月間確認", value: "月表示", icon: CalendarDays },
+    { href: "/admin/stay/listings", label: "リスティング管理", description: "客室・全館の料金と公開設定", value: `${listings.count ?? 0}件`, icon: BedDouble },
+    { href: "/admin/stay/customers", label: "宿泊顧客", description: "宿泊者プロフィールと利用履歴", value: `${customers.count ?? 0}名`, icon: Users },
+    { href: "/admin/stay/messages", label: "メッセージ", description: "予約別のお客様メッセージ対応", value: `${messages.count ?? 0}件`, icon: MessageSquare },
+    { href: "/admin/stay/pricing", label: "料金ルール", description: "曜日・期間・特定日の料金設定", value: `${pricingRules.count ?? 0}件`, icon: Tags },
+    { href: "/admin/stay/blocked-dates", label: "ブロック日", description: "Airbnb予約・清掃・利用停止日", value: `${blockedDates.count ?? 0}件`, icon: CalendarOff },
+    { href: "/admin/stay/settings", label: "宿泊設定", description: "予約受付・支払い・共通案内", value: "受付・案内", icon: Settings },
+  ];
+  return <>
+    <p className="text-xs font-bold uppercase tracking-[.2em] text-emerald-600">Stay Management</p>
+    <h1 className="mt-2 text-3xl font-bold">宿泊管理</h1>
+    <p className="mt-3 text-sm leading-6 text-slate-500">宿泊予約、客室、料金、顧客対応を一元管理します。</p>
+    <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {links.map(({ href, label, description, value, icon: Icon }) => <Link href={href} key={href}>
+        <Card className="h-full transition hover:border-emerald-300 hover:shadow-md">
+          <CardContent className="flex h-full items-start justify-between gap-4 p-6">
+            <div><h2 className="font-bold">{label}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{description}</p><p className="mt-4 text-sm font-bold text-emerald-600">{value}</p></div>
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-600"><Icon size={20} /></span>
+          </CardContent>
+        </Card>
+      </Link>)}
+    </div>
+  </>;
+}
