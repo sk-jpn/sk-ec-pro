@@ -17,7 +17,7 @@ function adjacentMonth(month: string, offset: number) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function StayCalendarPage({ searchParams }: { searchParams: Promise<{ month?: string; listingId?: string }> }) {
+export default async function StayCalendarPage({ searchParams }: { searchParams: Promise<{ month?: string; listingId?: string; start?: string; lastNight?: string }> }) {
   const query = await searchParams;
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const currentMonth = today.slice(0, 7);
@@ -49,11 +49,13 @@ export default async function StayCalendarPage({ searchParams }: { searchParams:
     const blockingManualBlocks = dayBlocks.filter((block) => !block.calendar_feed_id);
     const past = date < today;
     const listingClosed = !selected?.is_active || !selected?.booking_enabled;
-    const available = !listingClosed && dayBookings.length === 0 && dayBlocks.length === 0;
+    const available = !past && !listingClosed && dayBookings.length === 0 && dayBlocks.length === 0;
     const selectable = !listingClosed && dayBookings.length === 0 && blockingManualBlocks.length === 0;
     return { day, date, dayBookings, dayBlocks, available, selectable, past, listingClosed };
   });
-  const queryFor = (targetMonth: string) => `/admin/stay/calendar?month=${targetMonth}${selectedId ? `&listingId=${selectedId}` : ""}`;
+  const selectedStart = /^\d{4}-\d{2}-\d{2}$/.test(query.start ?? "") ? query.start! : "";
+  const selectedLastNight = selectedStart && /^\d{4}-\d{2}-\d{2}$/.test(query.lastNight ?? "") && query.lastNight! >= selectedStart ? query.lastNight! : "";
+  const queryFor = (targetMonth: string) => `/admin/stay/calendar?month=${targetMonth}${selectedId ? `&listingId=${selectedId}` : ""}${selectedStart ? `&start=${selectedStart}` : ""}${selectedLastNight ? `&lastNight=${selectedLastNight}` : ""}`;
 
   return <>
     <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -62,7 +64,7 @@ export default async function StayCalendarPage({ searchParams }: { searchParams:
     </div>
     <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
       <div className="mb-5 flex items-center justify-between"><Link href={queryFor(adjacentMonth(month, -1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="前月"><ChevronLeft size={19} /></Link><div className="text-center"><p className="text-xl font-bold">{year}年{monthNumber}月</p><p className="mt-1 text-sm font-medium text-slate-500">{selected ? `${selected.code}・${selected.name}` : "リスティング未登録"}</p></div><Link href={queryFor(adjacentMonth(month, 1))} className="grid size-10 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50" aria-label="翌月"><ChevronRight size={19} /></Link></div>
-      {selectedId && <AvailabilityCalendar days={calendarDays.map((entry) => entry ? { day: entry.day, date: entry.date, available: entry.available, selectable: entry.selectable, past: entry.past, listingClosed: entry.listingClosed, bookings: entry.dayBookings.map((booking) => ({ id: booking.id, number: booking.booking_number, status: STAY_STATUSES[booking.status] ?? booking.status })), blocks: entry.dayBlocks.map((block) => ({ id: block.id, label: block.calendar_feed_id ? "Airbnb予約" : block.reason, reason: block.reason, isAirbnb: Boolean(block.calendar_feed_id) })) } : null)} today={today} listingId={selectedId} maxGuests={selected?.max_guests ?? 1} customers={customers ?? []} />}
+      {selectedId && <AvailabilityCalendar days={calendarDays.map((entry) => entry ? { day: entry.day, date: entry.date, available: entry.available, selectable: entry.selectable, past: entry.past, listingClosed: entry.listingClosed, bookings: entry.dayBookings.map((booking) => ({ id: booking.id, number: booking.booking_number, status: STAY_STATUSES[booking.status] ?? booking.status })), blocks: entry.dayBlocks.map((block) => ({ id: block.id, label: block.calendar_feed_id ? "Airbnb予約" : block.reason, reason: block.reason, isAirbnb: Boolean(block.calendar_feed_id) })) } : null)} today={today} listingId={selectedId} maxGuests={selected?.max_guests ?? 1} customers={customers ?? []} initialStart={selectedStart} initialLastNight={selectedLastNight} />}
     </div>
   </>;
 }
