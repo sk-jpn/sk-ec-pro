@@ -1,7 +1,6 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { stayLocaleLabels, stayLocales, translateStayText, type StayLocale } from "@/lib/stay/i18n";
 
 const StayLocaleContext=createContext<StayLocale>("ja");
@@ -40,4 +39,4 @@ function StayDomLocalized({locale,children}:{locale:StayLocale;children:React.Re
 }
 
 export function StayLanguageProvider({locale,children}:{locale:StayLocale;children:React.ReactNode}){return <StayLocaleContext.Provider value={locale}><StayDomLocalized locale={locale}>{children}</StayDomLocalized></StayLocaleContext.Provider>}
-export function StayLanguageSwitcher(){const locale=useStayLocale();const router=useRouter();return <label className="shrink-0"><span className="sr-only">Language</span><select value={locale} onChange={(event)=>{document.cookie=`stay_locale=${event.target.value}; Path=/; Max-Age=31536000; SameSite=Lax`;router.refresh()}} className="min-h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium" aria-label="Language">{stayLocales.map(value=><option value={value} key={value}>{stayLocaleLabels[value]}</option>)}</select></label>}
+export function StayLanguageSwitcher(){const locale=useStayLocale();return <label className="shrink-0"><span className="sr-only">Language</span><select value={locale} onChange={(event)=>{document.cookie=`stay_locale=${event.target.value}; Path=/; Max-Age=31536000; SameSite=Lax`;window.location.reload()}} className="min-h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium" aria-label="Language">{stayLocales.map(value=><option value={value} key={value}>{stayLocaleLabels[value]}</option>)}</select></label>}
