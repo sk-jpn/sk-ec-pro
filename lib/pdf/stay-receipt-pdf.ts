@@ -55,11 +55,25 @@ export async function generateStayReceiptPdf(data: StayReceiptData, options: Sta
   doc.registerFont("ReceiptFont", files.regular); doc.registerFont("ReceiptFont-Bold", files.bold); doc.font("ReceiptFont");
   const baseFontDir = join(process.cwd(), "node_modules", "@fontsource", "noto-sans-jp", "files");
   doc.registerFont("BaseFont", join(baseFontDir, "noto-sans-jp-japanese-400-normal.woff")); doc.registerFont("BaseFont-Bold", join(baseFontDir, "noto-sans-jp-japanese-700-normal.woff"));
+  if (locale === "zh-CN") {
+    doc.registerFont("SCName111-Bold", join(process.cwd(), "node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-111-700-normal.woff"));
+    doc.registerFont("SCName113-Bold", join(process.cwd(), "node_modules/@fontsource/noto-sans-sc/files/noto-sans-sc-113-700-normal.woff"));
+  }
   const chunks: Buffer[] = []; doc.on("data", (chunk: Buffer) => chunks.push(chunk));
   const completed = new Promise<Buffer>((resolve, reject) => { doc.on("end", () => resolve(Buffer.concat(chunks))); doc.on("error", reject); });
   const left = 42, right = 553, width = right - left;
   doc.font("ReceiptFont-Bold").fontSize(22).fillColor(ink).text(text.title, left, 42, { width, align: "center" }); doc.moveTo(left, 78).lineTo(right, 78).lineWidth(1.2).strokeColor(accent).stroke();
-  doc.font("ReceiptFont-Bold").fontSize(13).fillColor(ink).text(`${data.customerName}${text.honorific}`, left, 101, { width: 280 }); doc.moveTo(left, 123).lineTo(320, 123).lineWidth(0.5).strokeColor(line).stroke();
+  if (locale === "zh-CN") {
+    let nameX = left;
+    for (const character of data.customerName) {
+      const nameFont = character === "杨" ? "SCName113-Bold" : character === "凯" ? "SCName111-Bold" : "ReceiptFont-Bold";
+      doc.font(nameFont).fontSize(13).fillColor(ink).text(character, nameX, 101, { lineBreak: false });
+      nameX += doc.widthOfString(character);
+    }
+  } else {
+    doc.font("ReceiptFont-Bold").fontSize(13).fillColor(ink).text(`${data.customerName}${text.honorific}`, left, 101, { width: 280 });
+  }
+  doc.moveTo(left, 123).lineTo(320, 123).lineWidth(0.5).strokeColor(line).stroke();
   const metaX = 354;
   [[text.receiptDate, dateLabel(data.receiptDate, locale)], [text.receiptNo, data.receiptNumber], [text.bookingNo, data.bookingNumber]].forEach(([label, value], index) => { const y = 96 + index * 20; doc.font("ReceiptFont").fontSize(8).fillColor(muted).text(label, metaX, y, { width: 70 }); doc.font("BaseFont-Bold").fontSize(8.5).fillColor(ink).text(value, metaX + 70, y, { width: 129, align: "right" }); });
   const issuerName = process.env.RECEIPT_ISSUER_NAME || "Formosa Japan / 神木新之介", issuerAddress = process.env.RECEIPT_ISSUER_ADDRESS || "〒273-0011 千葉県船橋市湊町3-22-12", registrationNumber = process.env.RECEIPT_REGISTRATION_NUMBER || "T6810016629454";
