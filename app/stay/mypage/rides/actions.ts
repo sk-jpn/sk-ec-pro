@@ -5,17 +5,17 @@ import { requireStayUser } from "@/lib/stay/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { calculateRideFare, DEFAULT_RIDE_PRICING, type RidePricingSettings } from "@/lib/stay/ride-pricing";
 import { getDrivingRoute } from "@/lib/stay/ride-route";
-import { FIXED_ROUTE_ROOM_CODES, getFixedRoute } from "@/lib/stay/ride-fixed-routes";
+import { getFixedRouteForRoom } from "@/lib/stay/ride-fixed-routes";
 
 const value = (form: FormData, name: string, max = 500) => String(form.get(name) ?? "").trim().slice(0, max);
 
 export async function createRideBooking(formData: FormData) {
   const { customer } = await requireStayUser("/stay/mypage/rides/new");
   const rideDate = value(formData, "rideDate", 10), departureTime = value(formData, "departureTime", 5);
-  const pickupAddress = value(formData, "pickupAddress"), destinationAddress = value(formData, "destinationAddress");
+  let pickupAddress = value(formData, "pickupAddress"), destinationAddress = value(formData, "destinationAddress");
   const stayBookingId = value(formData, "stayBookingId", 36) || null;
-  const fixedRouteId=value(formData,"fixedRouteId",50),tripType=value(formData,"tripType",20)==="round_trip"?"round_trip":"one_way";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(rideDate) || !/^\d{2}:\d{2}$/.test(departureTime) || pickupAddress.length < 2 || destinationAddress.length < 2) redirect("/stay/mypage/rides/new?error=invalid");
+  const fixedChoice=value(formData,"fixedRouteChoice",80),[choiceRouteId,choiceTripType]=fixedChoice.split(":"),fixedRouteId=choiceRouteId||value(formData,"fixedRouteId",50),tripType=(choiceTripType||value(formData,"tripType",20))==="round_trip"?"round_trip":"one_way";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(rideDate) || !/^\d{2}:\d{2}$/.test(departureTime) || (!fixedRouteId&&(pickupAddress.length < 2 || destinationAddress.length < 2))) redirect("/stay/mypage/rides/new?error=invalid");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   if (rideDate < today) redirect("/stay/mypage/rides/new?error=invalid");
   const admin = createSupabaseAdminClient();
@@ -26,8 +26,9 @@ export async function createRideBooking(formData: FormData) {
     stayRoomCode=(stay.stay_listings as unknown as {code:string}|null)?.code??"";
   }
   try {
-    const fixedRoute=getFixedRoute(fixedRouteId);
-    if(fixedRouteId&&(!fixedRoute||!FIXED_ROUTE_ROOM_CODES.has(stayRoomCode)||(tripType==="round_trip"&&!("roundTrip" in fixedRoute))))redirect("/stay/mypage/rides/new?error=invalid");
+    const fixedRoute=getFixedRouteForRoom(stayRoomCode,fixedRouteId);
+    if(fixedRouteId&&(!fixedRoute||(tripType==="round_trip"&&!("roundTrip" in fixedRoute))))redirect("/stay/mypage/rides/new?error=invalid");
+    if(fixedRoute){pickupAddress="滞在中の部屋";destinationAddress=fixedRoute.label}
     const {data:setting}=await admin.from("stay_ride_settings").select("*").eq("id",true).maybeSingle();
     const settings = { ...DEFAULT_RIDE_PRICING, ...(setting ?? {}) } as RidePricingSettings;
     const route=fixedRoute?{distanceMeters:0,durationSeconds:0}:await getDrivingRoute(pickupAddress,destinationAddress);

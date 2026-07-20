@@ -17,7 +17,7 @@ const providers: { id: OAuthProvider; label: string; icon: React.ReactNode }[] =
   { id: "azure", label: "Microsoft", icon: <span aria-hidden="true" className="grid grid-cols-2 gap-0.5">{["#f25022", "#7fba00", "#00a4ef", "#ffb900"].map((color) => <i key={color} className="size-2" style={{ backgroundColor: color }} />)}</span> },
 ];
 
-type LoginDestination = "/admin" | "/account" | "/estimate" | "/stay/mypage" | "/stay/search";
+type LoginDestination = "/admin" | "/account" | "/estimate" | "/stay/mypage" | "/stay/search" | "/stay/mypage/rides";
 function LoginButtons({ next, enabledProviders }: { next: LoginDestination; enabledProviders: OAuthProvider[] }) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState("");

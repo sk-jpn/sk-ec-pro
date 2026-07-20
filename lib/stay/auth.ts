@@ -14,17 +14,8 @@ export async function requireStayUser(next = "/stay/mypage") {
     throw new Error("宿泊プロフィールを確認できませんでした。");
   }
   if (!customer) {
-    const { data: created, error: createError } = await admin.from("stay_customers").upsert({
-      auth_user_id: user.id,
-      name: user.user_metadata.full_name ?? user.user_metadata.name ?? user.email ?? "お客様",
-      email: user.email ?? "",
-      last_login_at: new Date().toISOString(),
-    }, { onConflict: "auth_user_id" }).select("*").single();
-    if (createError) {
-      console.error("宿泊プロフィールの作成に失敗しました。", { code: createError.code, message: createError.message, details: createError.details });
-      throw new Error("宿泊プロフィールを作成できませんでした。");
-    }
-    return { user, customer: created, supabase };
+    await supabase.auth.signOut();
+    redirect(`/stay/signup?next=${encodeURIComponent(next)}`);
   }
   return { user, customer, supabase };
 }

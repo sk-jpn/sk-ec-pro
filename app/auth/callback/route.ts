@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const requestedNext = requestUrl.searchParams.get("next");
   const mode = requestUrl.searchParams.get("mode");
-  const next = requestedNext === "/account" || requestedNext === "/estimate" || requestedNext === "/stay/mypage" || requestedNext === "/stay/search" ? requestedNext : "/admin";
+  const next = requestedNext === "/account" || requestedNext === "/estimate" || requestedNext === "/stay/mypage" || requestedNext === "/stay/search" || requestedNext === "/stay/mypage/rides" ? requestedNext : "/admin";
   const loginPath = next === "/admin" ? "/admin/login" : next.startsWith("/stay/") ? "/stay/login" : "/login";
   const destinationPath = withBasePath(next);
   const destination = new URL(destinationPath, requestUrl.origin);
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     }
   }
 
-  if (next === "/stay/mypage" || next === "/stay/search") {
+  if (next === "/stay/mypage" || next === "/stay/search" || next === "/stay/mypage/rides") {
     const admin = createSupabaseAdminClient();
     const { data: existingProfile, error: lookupError } = await admin.from("stay_customers").select("id").eq("auth_user_id", user.id).maybeSingle();
     if (lookupError) {
@@ -136,6 +136,9 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL(`${withBasePath("/stay/signup")}?error=signup_expired`, requestUrl.origin));
       }
       ({ error: profileError } = await admin.from("stay_customers").insert({ auth_user_id: user.id, name: signup.name, email: signup.email, last_login_at: new Date().toISOString() }));
+    } else if (next === "/stay/mypage/rides") {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL(`${withBasePath("/stay/signup")}?next=${encodeURIComponent(next)}`, requestUrl.origin));
     } else {
       await supabase.auth.signOut();
       return NextResponse.redirect(new URL(`${withBasePath("/stay/login")}?error=account_unregistered`, requestUrl.origin));

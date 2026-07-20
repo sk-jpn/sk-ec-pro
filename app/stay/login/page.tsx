@@ -18,7 +18,7 @@ const authenticationErrors: Record<string, string> = {
 
 export default async function StayLoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const query = await searchParams;
-  const next: "/stay/search" | "/stay/mypage" = query.next === "/stay/search" ? "/stay/search" : "/stay/mypage";
+  const next: "/stay/search" | "/stay/mypage" | "/stay/mypage/rides" = query.next === "/stay/search" ? "/stay/search" : query.next === "/stay/mypage/rides" ? "/stay/mypage/rides" : "/stay/mypage";
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect(next);
@@ -35,10 +35,10 @@ export default async function StayLoginPage({ searchParams }: { searchParams: Pr
       <p className="mt-2 text-sm leading-6 text-slate-500">登録済みのGoogle・Microsoftアカウントでログインできます。</p>
       {authenticationError && <div role="alert" className={`mt-5 rounded-xl border p-4 ${accountUnregistered ? "border-amber-200 bg-amber-50 text-amber-900" : "border-red-200 bg-red-50 text-red-800"}`}>
         <p className="text-sm font-bold leading-6">{authenticationError}</p>
-        {accountUnregistered && <Button asChild className="mt-3 w-full"><Link href="/stay/signup">アカウント作成へ</Link></Button>}
+        {accountUnregistered && <Button asChild className="mt-3 w-full"><Link href={`/stay/signup?next=${encodeURIComponent(next)}`}>アカウント作成へ</Link></Button>}
       </div>}
       <div className="mt-5"><OAuthLoginButtons next={next} /></div>
-      <p className="mt-6 border-t pt-5 text-center text-sm text-slate-500">初めて利用する方は <Link href="/stay/signup" className="font-bold text-emerald-700 underline">アカウント作成</Link></p>
+      <p className="mt-6 border-t pt-5 text-center text-sm text-slate-500">初めて利用する方は <Link href={`/stay/signup?next=${encodeURIComponent(next)}`} className="font-bold text-emerald-700 underline">アカウント作成</Link></p>
     </CardContent></Card>
   </div></main>;
 }
