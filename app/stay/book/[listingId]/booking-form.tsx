@@ -14,14 +14,14 @@ type BookingFormProps = {
   checkIn: string;
   checkOut: string;
   guests: number;
-  maxGuests: number;
+  maxGuests?: number;
   name: string;
   email: string;
   phone: string;
-  initialQuote: BookingQuote | null;
+  initialQuote?: BookingQuote | null;
 };
 
-export function BookingForm({ listingId, checkIn, checkOut, guests, maxGuests, name, email, phone, initialQuote }: BookingFormProps) {
+export function BookingForm({ listingId, checkIn, checkOut, guests, maxGuests = 100, name, email, phone, initialQuote = null }: BookingFormProps) {
   const [state, action, pending] = useActionState(requestBooking, initial);
   const [guestCount, setGuestCount] = useState(guests);
   const [quote, setQuote] = useState(initialQuote);
