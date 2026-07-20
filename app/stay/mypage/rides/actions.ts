@@ -39,6 +39,7 @@ export async function createRideBooking(formData: FormData) {
       booking_number: bookingNumber, customer_id: customer.id, stay_booking_id: stayBookingId, ride_date: rideDate, departure_time: departureTime,
       pickup_address: pickupAddress, destination_address: destinationAddress, distance_meters: route.distanceMeters, duration_seconds: route.durationSeconds,
       meter_fare: fare.meterFare, discount_percent: fare.discountPercent, discount_amount: fare.discountAmount, total_amount: fare.totalAmount, is_night: fare.isNight,
+      distance_fare: fare.meterFare, highway_fee: 0, other_fee: 0,
       pricing_snapshot: fixedRoute?{type:"fixed",route:fixedRoute.id}:settings,fixed_route_id:fixedRoute?.id??null,trip_type:tripType,status:"admin_reviewing",
     });
     if (error) throw error;
