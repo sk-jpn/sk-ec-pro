@@ -7,6 +7,7 @@ type Translations = Record<Exclude<StayLocale,"ja">,Record<string,string>>;
 export const stayTranslations: Translations = {
   en: {
     "アカウントがありません。アカウント作成からお進みください。":"No account was found. Please create an account to continue.","アカウント作成へ":"Create account",
+    "ログインを完了できませんでした。もう一度お試しください。":"Login could not be completed. Please try again.","このアカウントではログインできません。":"This account cannot be used to log in.","認証処理でエラーが発生しました。時間をおいてもう一度お試しください。":"An authentication error occurred. Please try again later.","ログイン状態を確認できませんでした。もう一度ログインしてください。":"Your login session could not be verified. Please log in again.","ログイン処理でエラーが発生しました。もう一度お試しください。":"A login error occurred. Please try again.",
     "Direct Booking":"Direct Booking","Booking Request":"Booking Request","Stay":"Stay","Stay Messages":"Stay Messages","Stay My Page":"Stay My Page","Stay Search":"Stay Search","Stay Signup":"Stay Signup","Language":"Language","清掃料金は割引対象外です。":"Cleaning fees are not discounted.",
     "現金 / AliPay / WeChat Pay（手数料無料）":"Cash / AliPay / WeChat Pay (no fee)","ご希望の場合はオーナーに連絡してください。":"Contact the owner if you would like to use one of these methods.","領収書PDFをダウンロード":"Download receipt PDF","PDF作成中…":"Creating PDF…","PDFを作成できませんでした。":"Could not create the PDF.",
     "泊・":" nights · ",
@@ -25,6 +26,7 @@ export const stayTranslations: Translations = {
   },
   zh: {
     "アカウントがありません。アカウント作成からお進みください。":"未找到账号，请先创建账号。","アカウント作成へ":"创建账号",
+    "ログインを完了できませんでした。もう一度お試しください。":"无法完成登录，请重试。","このアカウントではログインできません。":"此账号无法登录。","認証処理でエラーが発生しました。時間をおいてもう一度お試しください。":"认证时发生错误，请稍后重试。","ログイン状態を確認できませんでした。もう一度ログインしてください。":"无法确认登录状态，请重新登录。","ログイン処理でエラーが発生しました。もう一度お試しください。":"登录时发生错误，请重试。",
     "Direct Booking":"直接预订","Booking Request":"预订申请","Stay":"住宿","Stay Messages":"住宿消息","Stay My Page":"住宿个人页面","Stay Search":"住宿查询","Stay Signup":"创建住宿账户","Language":"语言","清掃料金は割引対象外です。":"清洁费不参与优惠。",
     "現金 / AliPay / WeChat Pay（手数料無料）":"现金 / 支付宝 / 微信支付（免手续费）","ご希望の場合はオーナーに連絡してください。":"如需使用，请联系房东。","領収書PDFをダウンロード":"下载收据PDF","PDF作成中…":"正在生成PDF…","PDFを作成できませんでした。":"无法生成PDF。",
     "泊・":"晚・",
@@ -34,6 +36,7 @@ export const stayTranslations: Translations = {
   },
   ko: {
     "アカウントがありません。アカウント作成からお進みください。":"계정을 찾을 수 없습니다. 계정 만들기에서 계속해 주세요.","アカウント作成へ":"계정 만들기",
+    "ログインを完了できませんでした。もう一度お試しください。":"로그인을 완료할 수 없습니다. 다시 시도해 주세요.","このアカウントではログインできません。":"이 계정으로 로그인할 수 없습니다.","認証処理でエラーが発生しました。時間をおいてもう一度お試しください。":"인증 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.","ログイン状態を確認できませんでした。もう一度ログインしてください。":"로그인 상태를 확인할 수 없습니다. 다시 로그인해 주세요.","ログイン処理でエラーが発生しました。もう一度お試しください。":"로그인 중 오류가 발생했습니다. 다시 시도해 주세요.",
     "Direct Booking":"직접 예약","Booking Request":"예약 요청","Stay":"숙박","Stay Messages":"숙박 메시지","Stay My Page":"숙박 마이페이지","Stay Search":"숙박 검색","Stay Signup":"숙박 계정 만들기","Language":"언어","清掃料金は割引対象外です。":"청소비는 할인 대상이 아닙니다.",
     "現金 / AliPay / WeChat Pay（手数料無料）":"현금 / AliPay / WeChat Pay(수수료 무료)","ご希望の場合はオーナーに連絡してください。":"이용을 원하시면 숙소 주인에게 연락해 주세요.","領収書PDFをダウンロード":"영수증 PDF 다운로드","PDF作成中…":"PDF 생성 중…","PDFを作成できませんでした。":"PDF를 생성할 수 없습니다.",
     "泊・":"박・",
