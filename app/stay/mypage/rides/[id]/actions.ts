@@ -16,14 +16,22 @@ export async function rideCustomerAction(formData:FormData){
 }
 export async function startRideStripeCheckout(formData:FormData){
   const {customer}=await requireStayUser();const id=idOf(formData);if(!/^[0-9a-f-]{36}$/i.test(id))return;
-  const admin=createSupabaseAdminClient(),{data:ride}=await admin.from("stay_ride_bookings").select("id,booking_number,total_amount,card_fee_rate,status,payment_status,stay_customers(email)").eq("id",id).eq("customer_id",customer.id).maybeSingle();
-  if(!ride||ride.status!=="confirmed"||ride.payment_status!=="unpaid"||ride.total_amount<1)redirect(`/stay/mypage/rides/${id}?payment=failed`);
-  let checkoutUrl:string;
+  const admin=createSupabaseAdminClient(),{data:ride}=await admin.from("stay_ride_bookings").select("id,booking_number,total_amount,card_fee_rate,status,payment_status,payment_method,stripe_checkout_session_id,stay_customers(email)").eq("id",id).eq("customer_id",customer.id).maybeSingle();
+  const retrying=ride?.status==="payment_pending"&&ride.payment_status==="payment_pending"&&ride.payment_method==="stripe_card"&&Boolean(ride.stripe_checkout_session_id);
+  if(!ride||(!retrying&&(ride.status!=="confirmed"||ride.payment_status!=="unpaid"))||ride.total_amount<1)redirect(`/stay/mypage/rides/${id}?payment=failed`);
+  let checkoutUrl="",alreadyPaid=false;
   try{
+    const stripe=getStripeClient();
+    if(ride.stripe_checkout_session_id){const previous=await stripe.checkout.sessions.retrieve(ride.stripe_checkout_session_id);if(previous.payment_status==="paid"){alreadyPaid=true;checkoutUrl=`/stay/mypage/rides/${id}?payment=stripe_success`}else await stripe.checkout.sessions.expire(previous.id).catch(()=>undefined)}
+    if(!alreadyPaid){
     const fee=Math.round(ride.total_amount*Number(ride.card_fee_rate??3.6)/100),expected=ride.total_amount+fee,origin=new URL(process.env.SITE_URL||"https://formosajapan.com").origin,email=(ride.stay_customers as unknown as {email:string}|null)?.email;
-    const session=await getStripeClient().checkout.sessions.create({mode:"payment",payment_method_types:["card"],customer_email:email||undefined,client_reference_id:ride.id,line_items:[{price_data:{currency:"jpy",product_data:{name:`配車予約 ${ride.booking_number}`},unit_amount:expected},quantity:1}],metadata:{paymentType:"stay_ride",rideBookingId:ride.id,bookingNumber:ride.booking_number,expectedAmount:String(expected)},success_url:`${origin}/ec/stay/mypage/rides/${ride.id}?payment=stripe_success`,cancel_url:`${origin}/ec/stay/mypage/rides/${ride.id}/stripe-cancel`});
+    const session=await stripe.checkout.sessions.create({mode:"payment",payment_method_types:["card"],customer_email:email||undefined,client_reference_id:ride.id,line_items:[{price_data:{currency:"jpy",product_data:{name:`配車予約 ${ride.booking_number}`},unit_amount:expected},quantity:1}],metadata:{paymentType:"stay_ride",rideBookingId:ride.id,bookingNumber:ride.booking_number,expectedAmount:String(expected)},success_url:`${origin}/ec/stay/mypage/rides/${ride.id}?payment=stripe_success`,cancel_url:`${origin}/ec/stay/mypage/rides/${ride.id}/stripe-cancel`});
     if(!session.url)throw new Error("Stripe URLがありません。");
-    const {error}=await admin.from("stay_ride_bookings").update({status:"payment_pending",payment_status:"payment_pending",payment_method:"stripe_card",card_fee_amount:fee,stripe_checkout_session_id:session.id,updated_at:new Date().toISOString()}).eq("id",ride.id).eq("status","confirmed").eq("payment_status","unpaid");if(error)throw error;checkoutUrl=session.url;
+    let update=admin.from("stay_ride_bookings").update({status:"payment_pending",payment_status:"payment_pending",payment_method:"stripe_card",card_fee_amount:fee,stripe_checkout_session_id:session.id,updated_at:new Date().toISOString()}).eq("id",ride.id).eq("status",ride.status).eq("payment_status",ride.payment_status);
+    if(retrying)update=update.eq("payment_method","stripe_card").eq("stripe_checkout_session_id",ride.stripe_checkout_session_id);
+    const {data:updated,error}=await update.select("id").maybeSingle();if(error||!updated){await stripe.checkout.sessions.expire(session.id).catch(()=>undefined);throw error??new Error("配車決済情報を保存できませんでした。")}checkoutUrl=session.url;
+    }
   }catch(error){console.error("配車Stripe決済を開始できませんでした。",error);redirect(`/stay/mypage/rides/${id}?payment=failed`)}
+  if(!checkoutUrl)redirect(`/stay/mypage/rides/${id}?payment=failed`);
   redirect(checkoutUrl);
 }
