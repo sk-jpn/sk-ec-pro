@@ -20,6 +20,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
   const cancellable = ["pending_admin_review", "admin_reviewing", "awaiting_guest_confirmation"].includes(b.status);
   const payable = b.payment_status === "unpaid";
   const bankTransferPending = b.payment_status === "payment_pending" && b.payment_method === "bank_transfer";
+  const stripePaymentPending = b.payment_status === "payment_pending" && b.payment_method === "stripe_card";
   const cardFeeRate = Number(b.card_fee_rate ?? 3.6);
 
   return <div className="mx-auto max-w-3xl">
@@ -42,6 +43,14 @@ export default async function BookingDetail({ params, searchParams }: { params: 
       <p className="text-lg">合計<br /><b>{yen(b.total_amount)}</b></p>
     </div>
     {b.admin_message && <p className="mt-5 whitespace-pre-wrap rounded-xl bg-blue-50 p-5 text-sm">{b.admin_message}</p>}
+    {stripePaymentPending && <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950 sm:p-6">
+      <h2 className="text-xl font-bold">カード決済が完了していません。</h2>
+      <p className="mt-2 text-sm leading-6">Stripe支払い画面から戻った場合は、支払い方法選択画面に戻って再度お支払いできます。</p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <form action={startStayStripeCheckout}><input type="hidden" name="id" value={id} /><Button>Stripeで再度支払う</Button></form>
+        <Button asChild variant="outline"><Link href={`/stay/mypage/bookings/${id}/stripe-cancel`}>支払い方法選択に戻る</Link></Button>
+      </div>
+    </section>}
     {bankTransferPending && <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 text-blue-950 sm:p-6">
       <h2 className="text-xl font-bold">銀行振込を選択しました。下記口座へお振り込みください。</h2>
       <div className="mt-4 rounded-xl bg-white p-4 text-sm font-medium leading-7">{BANK_DETAILS}</div>
@@ -67,7 +76,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-5 sm:col-span-2"><h3 className="font-bold">現金 / AliPay / WeChat Pay（手数料無料）</h3><p className="mt-2 text-sm text-slate-600">ご希望の場合はオーナーに連絡してください。</p></div>
       </div>
     </section>}
-    {b.payment_status === "paid" && <><p className="mt-6 rounded-xl bg-emerald-50 p-5 font-bold text-emerald-800">お支払い済みです。ありがとうございました。</p><OwnerContact /></>}
+    {b.payment_status === "paid" && <><div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 p-5 text-emerald-800 sm:flex-row sm:items-center sm:justify-between"><p className="font-bold">お支払い済みです。ありがとうございました。</p><Button asChild variant="outline"><a href={`/stay/mypage/bookings/${id}/receipt`}>領収書PDFをダウンロード</a></Button></div><OwnerContact /></>}
     <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
       {b.status === "awaiting_guest_confirmation" && <form action={customerBookingAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="action" value="confirm" /><Button>この内容で予約する</Button></form>}
       {cancellable && <div className="min-w-0 flex-1"><CancelBookingForm id={id} /></div>}
