@@ -20,12 +20,26 @@ export async function GET(request: Request) {
   const destination = new URL(destinationPath, requestUrl.origin);
 
   if (!code) {
+    console.error("OAuth認証コードを受信できませんでした。", {
+      error: requestUrl.searchParams.get("error"),
+      errorCode: requestUrl.searchParams.get("error_code"),
+      errorDescription: requestUrl.searchParams.get("error_description"),
+      next,
+      mode,
+    });
     return NextResponse.redirect(new URL(`${withBasePath(loginPath)}?error=oauth`, requestUrl.origin));
   }
 
   const supabase = await createSupabaseServerClient();
   const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !sessionData.session) {
+    console.error("OAuth認証コードをセッションへ交換できませんでした。", {
+      code: error?.code,
+      status: error?.status,
+      message: error?.message,
+      next,
+      mode,
+    });
     return NextResponse.redirect(new URL(`${withBasePath(loginPath)}?error=oauth`, requestUrl.origin));
   }
 

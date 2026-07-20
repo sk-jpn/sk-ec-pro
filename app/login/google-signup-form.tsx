@@ -38,7 +38,7 @@ export function GoogleSignupForm() {
     const supabase = createSupabaseBrowserClient();
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}${withBasePath("/auth/callback")}?next=%2Faccount&mode=signup` },
+      options: { redirectTo: `${window.location.origin}${withBasePath("/auth/callback")}?next=%2Faccount&mode=signup`, ...(provider === "azure" ? { scopes: "email" } : {}) },
     });
     if (authError) {
       setError(`${label}アカウント作成を開始できませんでした。`);

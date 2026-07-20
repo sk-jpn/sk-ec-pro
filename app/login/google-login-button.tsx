@@ -28,7 +28,10 @@ function LoginButtons({ next, enabledProviders }: { next: LoginDestination; enab
     const supabase = createSupabaseBrowserClient();
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}${withBasePath("/auth/callback")}?next=${encodeURIComponent(next)}` },
+      options: {
+        redirectTo: `${window.location.origin}${withBasePath("/auth/callback")}?next=${encodeURIComponent(next)}`,
+        ...(provider === "azure" ? { scopes: "email" } : {}),
+      },
     });
     if (authError) {
       setError(`${label}ログインを開始できませんでした。`);
