@@ -3,6 +3,7 @@ type RideTranslations=Record<RideLocale,Record<string,string>>;
 
 export const stayRideTranslations:RideTranslations={
   en:{
+    "決済手数料はかかりません。":"No payment processing fee.",
     "カード決済が完了していません。":"Card payment is not complete.","Stripe支払い画面から戻った場合は、再度支払うか支払い方法選択画面へ戻れます。":"If you returned from Stripe, you can pay again or return to payment methods.","Stripeで再度支払う":"Pay again with Stripe","支払い方法選択に戻る":"Back to payment methods",
     "配車予約":"Ride bookings","新しい配車予約":"New ride booking","配車予約を受け付けました。":"Your ride booking has been received.","配車予約はまだありません。":"No ride bookings yet.","配車予約詳細":"Ride booking details","見積合計":"Estimated total","詳細":"Details",
     "管理者確認中":"Under owner review","顧客確認中":"Awaiting your confirmation","予約確定":"Confirmed","支払い待ち":"Awaiting payment","支払い済み":"Paid","完了":"Completed","顧客キャンセル":"Cancelled by guest","管理者キャンセル":"Cancelled by owner",
@@ -13,6 +14,7 @@ export const stayRideTranslations:RideTranslations={
     "内容を承認しました。お支払い方法を選択してください。":"You approved the details. Please choose a payment method.","配車予約をキャンセルしました。":"The ride booking was cancelled.","カード決済を受け付けました。決済確認後に状態が更新されます。":"Card payment was received. The status will update after confirmation.","カード決済をキャンセルしました。もう一度お支払いいただけます。":"Card payment was cancelled. You can try again.","支払いを開始できませんでした。":"Payment could not be started.","配車日時":"Ride date and time","予約状況":"Booking status","紐づけなし":"Not linked","料金種別":"Fare type","定額ルート（":"Fixed fare (","距離制運賃":"Distance-based fare","合計":"Total","管理者が内容を確認しています。確認後、承認またはキャンセルできるようになります。":"The owner is reviewing the details. You can approve or cancel after review.","この内容を承認する":"Approve these details","配車予約をキャンセル":"Cancel ride booking","お支払い方法":"Payment method","クレジットカード":"Credit card","Stripeで支払う":"Pay with Stripe","現金 / AliPay / WeChat Pay（手数料無料）":"Cash / AliPay / WeChat Pay (no fee)","ご希望の場合はオーナーに連絡してください。":"Contact the owner to use one of these methods.","お支払い済みです。":"Payment completed."
   },
   zh:{
+    "決済手数料はかかりません。":"免支付手续费。",
     "カード決済が完了していません。":"银行卡付款尚未完成。","Stripe支払い画面から戻った場合は、再度支払うか支払い方法選択画面へ戻れます。":"如果您从Stripe页面返回，可以重新付款或返回付款方式页面。","Stripeで再度支払う":"使用Stripe重新付款","支払い方法選択に戻る":"返回付款方式",
     "配車予約":"用车预订","新しい配車予約":"新建用车预订","配車予約を受け付けました。":"已收到用车预订。","配車予約はまだありません。":"暂无用车预订。","配車予約詳細":"用车预订详情","見積合計":"预估合计","詳細":"详情",
     "管理者確認中":"房东确认中","顧客確認中":"等待客人确认","予約確定":"预订已确认","支払い待ち":"等待付款","支払い済み":"已付款","完了":"已完成","顧客キャンセル":"客人已取消","管理者キャンセル":"房东已取消",
@@ -22,6 +24,7 @@ export const stayRideTranslations:RideTranslations={
     "内容を承認しました。お支払い方法を選択してください。":"已确认内容，请选择付款方式。","配車予約をキャンセルしました。":"用车预订已取消。","カード決済を受け付けました。決済確認後に状態が更新されます。":"已收到银行卡付款，确认后将更新状态。","カード決済をキャンセルしました。もう一度お支払いいただけます。":"银行卡付款已取消，您可以重新付款。","支払いを開始できませんでした。":"无法开始付款。","配車日時":"用车日期时间","予約状況":"预订状态","紐づけなし":"未关联","料金種別":"价格类型","定額ルート（":"固定价格路线（","距離制運賃":"按距离计费","合計":"合计","管理者が内容を確認しています。確認後、承認またはキャンセルできるようになります。":"房东正在确认内容，确认后您可以批准或取消。","この内容を承認する":"确认此内容","配車予約をキャンセル":"取消用车预订","お支払い方法":"付款方式","クレジットカード":"信用卡","Stripeで支払う":"使用Stripe付款","現金 / AliPay / WeChat Pay（手数料無料）":"现金 / 支付宝 / 微信支付（免手续费）","ご希望の場合はオーナーに連絡してください。":"如需使用，请联系房东。","お支払い済みです。":"已付款。"
   },
   ko:{
+    "決済手数料はかかりません。":"결제 수수료가 없습니다.",
     "カード決済が完了していません。":"카드 결제가 완료되지 않았습니다.","Stripe支払い画面から戻った場合は、再度支払うか支払い方法選択画面へ戻れます。":"Stripe 화면에서 돌아온 경우 다시 결제하거나 결제 방법 선택으로 돌아갈 수 있습니다.","Stripeで再度支払う":"Stripe로 다시 결제","支払い方法選択に戻る":"결제 방법 선택으로 돌아가기",
     "配車予約":"차량 예약","新しい配車予約":"새 차량 예약","配車予約を受け付けました。":"차량 예약이 접수되었습니다.","配車予約はまだありません。":"차량 예약이 없습니다.","配車予約詳細":"차량 예약 상세","見積合計":"예상 합계","詳細":"상세",
     "管理者確認中":"숙소 확인 중","顧客確認中":"고객 확인 대기","予約確定":"예약 확정","支払い待ち":"결제 대기","支払い済み":"결제 완료","完了":"완료","顧客キャンセル":"고객 취소","管理者キャンセル":"숙소 취소",

@@ -42,6 +42,7 @@ export async function createRideBooking(formData: FormData) {
       meter_fare: fare.meterFare, discount_percent: fare.discountPercent, discount_amount: fare.discountAmount, total_amount: fare.totalAmount, is_night: fare.isNight,
       distance_fare: fare.meterFare, highway_fee: 0, other_fee: 0,
       pricing_snapshot: fixedRoute?{type:"fixed",route:fixedRoute.id}:settings,fixed_route_id:fixedRoute?.id??null,trip_type:tripType,status:"admin_reviewing",
+      card_fee_rate: 0, card_fee_amount: 0,
     });
     if (error) throw error;
   } catch (error) {
