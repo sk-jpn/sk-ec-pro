@@ -27,6 +27,15 @@ export async function POST(request: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
   if (session.payment_status !== "paid") return Response.json({ received: true });
+  if (session.metadata?.paymentType === "stay_ride") {
+    const id=session.metadata.rideBookingId,number=session.metadata.bookingNumber,expected=Number(session.metadata.expectedAmount);
+    if(!id||!number||!Number.isSafeInteger(expected)||expected<1)return Response.json({message:"配車予約情報がありません。"},{status:400});
+    if(session.amount_total!==expected||session.currency!=="jpy")return Response.json({message:"配車決済金額が一致しません。"},{status:400});
+    const admin=createSupabaseAdminClient();const {data:ride}=await admin.from("stay_ride_bookings").select("id,total_amount,card_fee_amount,payment_status,stripe_checkout_session_id").eq("id",id).eq("booking_number",number).maybeSingle();
+    if(!ride||ride.total_amount+ride.card_fee_amount!==expected||ride.stripe_checkout_session_id!==session.id)return Response.json({message:"配車予約が一致しません。"},{status:400});
+    if(ride.payment_status!=="paid"){const {error}=await admin.from("stay_ride_bookings").update({status:"paid",payment_status:"paid",payment_method:"stripe_card",paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",id).eq("stripe_checkout_session_id",session.id);if(error)return Response.json({message:"配車決済状態を保存できませんでした。"},{status:500})}
+    return Response.json({received:true});
+  }
   if (session.metadata?.paymentType === "stay") {
     const bookingId = session.metadata.bookingId;
     const bookingNumber = session.metadata.bookingNumber;

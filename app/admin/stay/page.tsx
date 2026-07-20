@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BedDouble, CalendarDays, CalendarOff, Car, ClipboardList, MessageSquare, Settings, Tags, Users } from "lucide-react";
+import { BedDouble, CalendarDays, CalendarOff, ClipboardList, MessageSquare, Settings, Tags, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -16,7 +16,6 @@ export default async function StayAdminPage() {
     supabase.from("stay_blocked_dates").select("id", { count: "exact", head: true }),
   ]);
   const links = [
-    { href: "/admin/stay/rides", label: "配車管理", description: "配車予約、見積金額、割引率の管理", value: "予約・料金", icon: Car },
     { href: "/admin/stay/bookings", label: "予約管理", description: "宿泊予約の確認・承認・進行管理", value: `${bookings.count ?? 0}件`, icon: ClipboardList },
     { href: "/admin/stay/calendar", label: "宿泊カレンダー", description: "予約とブロック日の月間確認", value: "月表示", icon: CalendarDays },
     { href: "/admin/stay/listings", label: "リスティング管理", description: "客室・全館の料金と公開設定", value: `${listings.count ?? 0}件`, icon: BedDouble },
