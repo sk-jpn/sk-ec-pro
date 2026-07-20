@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { PdfDownloadButton } from "@/components/pdf-download-button";
 import { withBasePath } from "@/config/site";
 import { STAY_STATUSES, stayDate, yen } from "@/lib/stay/presentation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -19,7 +20,7 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
 
   return <>
     <p className="text-xs font-bold text-emerald-600">{b.booking_number}</p>
-    <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-3xl font-bold">{(b.stay_listings as unknown as { name: string }).name}</h1>{b.payment_status === "paid" && <Button asChild variant="outline"><a href={withBasePath(`/admin/stay/bookings/${id}/receipt`)} target="_blank" rel="noreferrer">領収書PDFを表示</a></Button>}</div>
+    <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-3xl font-bold">{(b.stay_listings as unknown as { name: string }).name}</h1>{b.payment_status === "paid" && <PdfDownloadButton href={withBasePath(`/admin/stay/bookings/${id}/receipt`)} label="領収書PDFを表示" fileName={`receipt-${b.booking_number}.pdf`} openInNewTab receiptLanguage />}</div>
     {q.linked === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約を選択した宿泊顧客へリンクしました。</p>}
     {(q.linked === "failed" || q.linked === "invalid") && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">宿泊顧客へのリンクを変更できませんでした。</p>}
     {q.saved === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約内容を保存しました。</p>}

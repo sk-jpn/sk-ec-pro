@@ -7,7 +7,7 @@ type Translations = Record<Exclude<StayLocale,"ja">,Record<string,string>>;
 export const stayTranslations: Translations = {
   en: {
     "Direct Booking":"Direct Booking","Booking Request":"Booking Request","Stay":"Stay","Stay Messages":"Stay Messages","Stay My Page":"Stay My Page","Stay Search":"Stay Search","Stay Signup":"Stay Signup","Language":"Language","清掃料金は割引対象外です。":"Cleaning fees are not discounted.",
-    "現金 / AliPay / WeChat Pay（手数料無料）":"Cash / AliPay / WeChat Pay (no fee)","ご希望の場合はオーナーに連絡してください。":"Contact the owner if you would like to use one of these methods.","領収書PDFをダウンロード":"Download receipt PDF",
+    "現金 / AliPay / WeChat Pay（手数料無料）":"Cash / AliPay / WeChat Pay (no fee)","ご希望の場合はオーナーに連絡してください。":"Contact the owner if you would like to use one of these methods.","領収書PDFをダウンロード":"Download receipt PDF","PDF作成中…":"Creating PDF…","PDFを作成できませんでした。":"Could not create the PDF.",
     "泊・":" nights · ",
     "空室を検索":"Search availability",
     "ログアウト":"Log out",
@@ -24,7 +24,7 @@ export const stayTranslations: Translations = {
   },
   zh: {
     "Direct Booking":"直接预订","Booking Request":"预订申请","Stay":"住宿","Stay Messages":"住宿消息","Stay My Page":"住宿个人页面","Stay Search":"住宿查询","Stay Signup":"创建住宿账户","Language":"语言","清掃料金は割引対象外です。":"清洁费不参与优惠。",
-    "現金 / AliPay / WeChat Pay（手数料無料）":"现金 / 支付宝 / 微信支付（免手续费）","ご希望の場合はオーナーに連絡してください。":"如需使用，请联系房东。","領収書PDFをダウンロード":"下载收据PDF",
+    "現金 / AliPay / WeChat Pay（手数料無料）":"现金 / 支付宝 / 微信支付（免手续费）","ご希望の場合はオーナーに連絡してください。":"如需使用，请联系房东。","領収書PDFをダウンロード":"下载收据PDF","PDF作成中…":"正在生成PDF…","PDFを作成できませんでした。":"无法生成PDF。",
     "泊・":"晚・",
     "空室を検索":"查询空房",
     "ログアウト":"退出登录",
@@ -32,7 +32,7 @@ export const stayTranslations: Translations = {
   },
   ko: {
     "Direct Booking":"직접 예약","Booking Request":"예약 요청","Stay":"숙박","Stay Messages":"숙박 메시지","Stay My Page":"숙박 마이페이지","Stay Search":"숙박 검색","Stay Signup":"숙박 계정 만들기","Language":"언어","清掃料金は割引対象外です。":"청소비는 할인 대상이 아닙니다.",
-    "現金 / AliPay / WeChat Pay（手数料無料）":"현금 / AliPay / WeChat Pay(수수료 무료)","ご希望の場合はオーナーに連絡してください。":"이용을 원하시면 숙소 주인에게 연락해 주세요.","領収書PDFをダウンロード":"영수증 PDF 다운로드",
+    "現金 / AliPay / WeChat Pay（手数料無料）":"현금 / AliPay / WeChat Pay(수수료 무료)","ご希望の場合はオーナーに連絡してください。":"이용을 원하시면 숙소 주인에게 연락해 주세요.","領収書PDFをダウンロード":"영수증 PDF 다운로드","PDF作成中…":"PDF 생성 중…","PDFを作成できませんでした。":"PDF를 생성할 수 없습니다.",
     "泊・":"박・",
     "空室を検索":"객실 검색",
     "ログアウト":"로그아웃",
