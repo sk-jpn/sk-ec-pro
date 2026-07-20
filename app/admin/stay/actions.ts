@@ -2,14 +2,16 @@
 const text=(f:FormData,n:string,max=2000)=>String(f.get(n)??'').trim().slice(0,max);const num=(f:FormData,n:string)=>Math.max(0,Number(f.get(n))||0);
 export async function updateStayBooking(formData:FormData){
   const user=await requireAdminUser();
-  const id=text(formData,'id',36),status=text(formData,'status',50),paymentStatus=text(formData,'paymentStatus',50),previous=text(formData,'previousStatus',50),previousCheckIn=text(formData,'previousCheckIn',10),previousCheckOut=text(formData,'previousCheckOut',10),checkIn=text(formData,'checkIn',10),checkOut=text(formData,'checkOut',10);
+  const id=text(formData,'id',36),status=text(formData,'status',50),requestedPaymentStatus=text(formData,'paymentStatus',50),paymentMethod=text(formData,'paymentMethod',50),previous=text(formData,'previousStatus',50),previousCheckIn=text(formData,'previousCheckIn',10),previousCheckOut=text(formData,'previousCheckOut',10),checkIn=text(formData,'checkIn',10),checkOut=text(formData,'checkOut',10);
+  const paymentStatus=status==='paid'?'paid':requestedPaymentStatus;
   const allowed=['pending_admin_review','admin_reviewing','awaiting_guest_confirmation','confirmed','payment_pending','paid','check_in_scheduled','checked_in','checked_out','completed','guest_cancelled','admin_cancelled','expired','no_show'];
   const allowedPaymentStatuses=['unpaid','payment_pending','paid','refunded','partially_refunded'];
-  if(!allowed.includes(status)||!allowedPaymentStatuses.includes(paymentStatus)||!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)||!/^\d{4}-\d{2}-\d{2}$/.test(checkOut)||checkOut<=checkIn)redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  const allowedPaymentMethods=['','bank_transfer','stripe_card','cash','card_manual','other'];
+  if(!allowed.includes(status)||!allowedPaymentStatuses.includes(paymentStatus)||!allowedPaymentMethods.includes(paymentMethod)||!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)||!/^\d{4}-\d{2}-\d{2}$/.test(checkOut)||checkOut<=checkIn)redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   if(status!==previous&&!transitions[previous]?.includes(status))redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   const admin=createSupabaseAdminClient();
-  const {data:current}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status').eq('id',id).maybeSingle();
+  const {data:current}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at').eq('id',id).maybeSingle();
   if(!current)redirect(`/admin/stay/bookings/${id}?saved=failed`);
   if(checkIn!==previousCheckIn||checkOut!==previousCheckOut){
     const blockingStatuses=['pending_admin_review','awaiting_guest_confirmation','confirmed','payment_pending','paid','checked_in'];
@@ -21,7 +23,7 @@ export async function updateStayBooking(formData:FormData){
   }
   const pricing=current.payment_status==='unpaid'?(()=>{const subtotal=num(formData,'subtotal'),additionalGuestFee=num(formData,'additionalGuestFee'),cleaningFee=num(formData,'cleaningFee'),discount=Math.min(num(formData,'discount'),subtotal+additionalGuestFee),totalAmount=num(formData,'totalAmount'),cardFeeRate=Math.min(100,num(formData,'cardFeeRate'));return{subtotal,additional_guest_fee:additionalGuestFee,cleaning_fee:cleaningFee,discount_amount:discount,total_amount:totalAmount,card_fee_rate:cardFeeRate,card_fee_amount:0}})():{subtotal:current.subtotal,additional_guest_fee:current.additional_guest_fee,cleaning_fee:current.cleaning_fee,discount_amount:current.discount_amount,total_amount:current.total_amount,card_fee_rate:current.card_fee_rate,card_fee_amount:current.card_fee_amount};
   const nights=Math.round((new Date(`${checkOut}T00:00:00Z`).getTime()-new Date(`${checkIn}T00:00:00Z`).getTime())/86400000);
-  const update={check_in_date:checkIn,check_out_date:checkOut,nights,status,payment_status:paymentStatus,admin_message:text(formData,'adminMessage'),admin_memo:text(formData,'adminMemo',5000),...pricing,updated_at:new Date().toISOString(),...(status==='awaiting_guest_confirmation'?{admin_reviewed_at:new Date().toISOString()}:{})};
+  const update={check_in_date:checkIn,check_out_date:checkOut,nights,status,payment_status:paymentStatus,payment_method:paymentMethod||null,admin_message:text(formData,'adminMessage'),admin_memo:text(formData,'adminMemo',5000),...pricing,updated_at:new Date().toISOString(),...(status==='awaiting_guest_confirmation'?{admin_reviewed_at:new Date().toISOString()}:{}),...(paymentStatus==='paid'&&!current.paid_at?{paid_at:new Date().toISOString()}:{})};
   const {error}=await admin.from('stay_bookings').update(update).eq('id',id).eq('status',previous).eq('payment_status',current.payment_status).eq('check_in_date',previousCheckIn).eq('check_out_date',previousCheckOut);
   if(error)redirect(`/admin/stay/bookings/${id}?saved=failed`);
   if(status!==previous)await admin.from('stay_booking_status_history').insert({booking_id:id,previous_status:previous,new_status:status,changed_by_user_id:user.id,changed_by_role:'admin'});
