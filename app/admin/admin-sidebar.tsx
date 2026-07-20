@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BedDouble, LayoutDashboard, Settings, ShoppingCart } from "lucide-react";
+import { BedDouble, Car, LayoutDashboard, Settings, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withBasePath } from "@/config/site";
 
@@ -19,7 +19,8 @@ export function AdminSidebar() {
     <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:overflow-visible lg:px-4 lg:py-4" aria-label="管理画面ナビゲーション">
       <NavigationLink href="/admin" label="Dashboard" icon={LayoutDashboard} active={pathname === "/admin"} />
       <NavigationLink href="/admin/purchase" label="購入代行管理" icon={ShoppingCart} active={purchasePaths.some((path) => pathname.startsWith(path))} />
-      <NavigationLink href="/admin/stay" label="宿泊管理" icon={BedDouble} active={pathname.startsWith("/admin/stay")} />
+      <NavigationLink href="/admin/stay" label="宿泊管理" icon={BedDouble} active={pathname.startsWith("/admin/stay") && !pathname.startsWith("/admin/stay/rides")} />
+      <NavigationLink href="/admin/stay/rides" label="配車管理" icon={Car} active={pathname.startsWith("/admin/stay/rides")} />
       <NavigationLink href="/admin/settings" label="設定" icon={Settings} active={pathname.startsWith("/admin/settings")} />
     </nav>
     <div className="hidden border-t border-slate-100 p-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:block"><p className="text-xs leading-5 text-slate-400">Formosa Japan<br />Secure Administration</p></div>

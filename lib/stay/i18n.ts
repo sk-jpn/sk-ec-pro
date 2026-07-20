@@ -73,13 +73,19 @@ const stayAdditionalTranslations: Translations = {
   }
 };
 
+const rideTranslations: Translations = {
+  en: {"宿泊予約":"Stay bookings","配車予約":"Ride bookings","新しい配車予約":"New ride booking","配車予約はまだありません。":"No ride bookings yet.","配車予約を受け付けました。":"Your ride booking has been received.","配車日と出発情報を入力すると、道路距離から料金を自動見積します。":"Select a date and enter trip details to automatically estimate the fare.","1. 配車日を選択":"1. Select a ride date","選択日：":"Selected date: ","2. 出発情報を入力":"2. Enter trip details","出発時間":"Departure time","滞在中の部屋（任意）":"Room during your stay (optional)","選択しない":"Do not link","出発場所":"Pickup location","到着場所":"Destination","自動見積する":"Get automatic estimate","見積中…":"Estimating…","走行距離：約":"Driving distance: approx. ","通常メーター運賃：":"Meter fare: ","深夜・早朝":"Late night / early morning","見積合計：":"Estimated total: ","この内容で配車予約する":"Book this ride","受付済み":"Received","確定":"Confirmed","出発：":"Pickup: ","到着：":"Destination: "},
+  zh: {"宿泊予約":"住宿预订","配車予約":"用车预订","新しい配車予約":"新建用车预订","配車予約はまだありません。":"暂无用车预订。","配車予約を受け付けました。":"已收到用车预订。","配車日と出発情報を入力すると、道路距離から料金を自動見積します。":"选择日期并输入行程信息后，将按道路距离自动估价。","1. 配車日を選択":"1. 选择用车日期","選択日：":"已选日期：","2. 出発情報を入力":"2. 输入行程信息","出発時間":"出发时间","滞在中の部屋（任意）":"住宿房间（可选）","選択しない":"不关联","出発場所":"出发地点","到着場所":"目的地","自動見積する":"自动估价","見積中…":"估价中…","走行距離：約":"行驶距离：约","通常メーター運賃：":"计价器车费：","深夜・早朝":"深夜／清晨","見積合計：":"预估合计：","この内容で配車予約する":"按此内容预订用车","受付済み":"已受理","確定":"已确认","出発：":"出发：","到着：":"到达："},
+  ko: {"宿泊予約":"숙박 예약","配車予約":"차량 예약","新しい配車予約":"새 차량 예약","配車予約はまだありません。":"차량 예약이 없습니다.","配車予約を受け付けました。":"차량 예약이 접수되었습니다.","配車日と出発情報を入力すると、道路距離から料金を自動見積します。":"날짜와 이동 정보를 입력하면 도로 거리를 기준으로 요금을 자동 견적합니다.","1. 配車日を選択":"1. 차량 이용일 선택","選択日：":"선택일: ","2. 出発情報を入力":"2. 이동 정보 입력","出発時間":"출발 시간","滞在中の部屋（任意）":"숙박 객실(선택)","選択しない":"연결하지 않음","出発場所":"출발 장소","到着場所":"도착 장소","自動見積する":"자동 견적","見積中…":"견적 중…","走行距離：約":"주행 거리: 약 ","通常メーター運賃：":"미터 요금: ","深夜・早朝":"심야·이른 아침","見積合計：":"예상 합계: ","この内容で配車予約する":"이 내용으로 차량 예약","受付済み":"접수 완료","確定":"확정","出発：":"출발: ","到着：":"도착: "}
+};
+
 export function translateStayText(text:string,locale:StayLocale){
   if(locale==="ja")return text;
   const trimmed=text.trim();
-  const translations={...stayAdditionalTranslations[locale],...stayTranslations[locale]};
+  const translations={...rideTranslations[locale],...stayAdditionalTranslations[locale],...stayTranslations[locale]};
   const exact=translations[trimmed];
   if(exact!==undefined)return text.replace(trimmed,exact);
   const japaneseDate=trimmed.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/);
   if(japaneseDate){const [,year,month,day]=japaneseDate;const localized=new Intl.DateTimeFormat(locale,{year:"numeric",month:"short",day:"numeric",timeZone:"UTC"}).format(new Date(`${year}-${month.padStart(2,"0")}-${day.padStart(2,"0")}T00:00:00Z`));return text.replace(trimmed,localized)}
-  return Object.entries(stayAdditionalTranslations[locale]).filter(([source])=>source.length>=2).sort(([a],[b])=>b.length-a.length).reduce((result,[source,target])=>result.replaceAll(source,target),text);
+  return Object.entries({...rideTranslations[locale],...stayAdditionalTranslations[locale]}).filter(([source])=>source.length>=2).sort(([a],[b])=>b.length-a.length).reduce((result,[source,target])=>result.replaceAll(source,target),text);
 }
