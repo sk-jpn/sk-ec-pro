@@ -6,9 +6,9 @@ import { isAdminUser } from "@/lib/auth/authorization";
 export async function updateSupabaseSession(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete("x-sk-admin-login");
-  if (request.nextUrl.pathname.endsWith("/admin/login")) {
+  const isAdminLogin = request.nextUrl.pathname.endsWith("/admin/login");
+  if (isAdminLogin) {
     requestHeaders.set("x-sk-admin-login", "1");
-    return NextResponse.next({ request: { headers: requestHeaders } });
   }
   let response = NextResponse.next({ request: { headers: requestHeaders } });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,7 +31,13 @@ export async function updateSupabaseSession(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (isAdminLogin) {
+    if (authError?.code === "refresh_token_not_found") {
+      console.info("失効した管理者ログインセッションを削除しました。");
+    }
+    return response;
+  }
   if (!user || !isAdminUser(user)) {
     const loginUrl = new URL(withBasePath("/admin/login"), request.url);
     if (user) loginUrl.searchParams.set("error", "unauthorized");
