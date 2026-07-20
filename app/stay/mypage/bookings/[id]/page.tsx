@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { withBasePath } from "@/config/site";
 import { requireStayUser } from "@/lib/stay/auth";
 import { PAYMENT_STATUSES, STAY_STATUSES, stayDate, stayPreviousDate, yen } from "@/lib/stay/presentation";
 import { OwnerContact } from "../../owner-contact";
@@ -76,7 +77,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-5 sm:col-span-2"><h3 className="font-bold">現金 / AliPay / WeChat Pay（手数料無料）</h3><p className="mt-2 text-sm text-slate-600">ご希望の場合はオーナーに連絡してください。</p></div>
       </div>
     </section>}
-    {b.payment_status === "paid" && <><div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 p-5 text-emerald-800 sm:flex-row sm:items-center sm:justify-between"><p className="font-bold">お支払い済みです。ありがとうございました。</p><Button asChild variant="outline"><a href={`/stay/mypage/bookings/${id}/receipt`}>領収書PDFをダウンロード</a></Button></div><OwnerContact /></>}
+    {b.payment_status === "paid" && <><div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 p-5 text-emerald-800 sm:flex-row sm:items-center sm:justify-between"><p className="font-bold">お支払い済みです。ありがとうございました。</p><Button asChild variant="outline"><a href={withBasePath(`/stay/mypage/bookings/${id}/receipt`)}>領収書PDFをダウンロード</a></Button></div><OwnerContact /></>}
     <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
       {b.status === "awaiting_guest_confirmation" && <form action={customerBookingAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="action" value="confirm" /><Button>この内容で予約する</Button></form>}
       {cancellable && <div className="min-w-0 flex-1"><CancelBookingForm id={id} /></div>}
