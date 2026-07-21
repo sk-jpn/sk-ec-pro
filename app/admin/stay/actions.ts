@@ -119,7 +119,7 @@ export async function updateStayBooking(formData:FormData){
     });
     redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   }
-  const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
+  const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','payment_pending','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','payment_pending','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','payment_pending','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   
   // Debug status transition validation
   const statusChanged = status !== previous;
