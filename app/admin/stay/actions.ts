@@ -76,7 +76,7 @@ export async function updateStayBooking(formData:FormData){
   });
   
   if(!allValidationPassed) {
-    console.error("[BOOKING INVALID]", {
+    console.error("[BOOKING INVALID - DETAILED]", {
       bookingId: id,
       reason: "validation_error",
       statusValid,
@@ -85,8 +85,34 @@ export async function updateStayBooking(formData:FormData){
       checkInValid,
       checkOutValid,
       datesValid,
+      status: {
+        value: status,
+        isValid: statusValid,
+        allowedValues: allowed,
+      },
+      paymentStatus: {
+        value: paymentStatus,
+        isValid: paymentStatusValid,
+        allowedValues: allowedPaymentStatuses,
+      },
+      paymentMethod: {
+        value: paymentMethod,
+        isValid: paymentMethodValid,
+        allowedValues: allowedPaymentMethods,
+      },
+      dates: {
+        checkIn: {
+          value: checkIn,
+          isValid: checkInValid,
+        },
+        checkOut: {
+          value: checkOut,
+          isValid: checkOutValid,
+        },
+        comparison: compareDates(checkIn, checkOut),
+      },
     });
-    redirect(`/admin/stay/bookings/${id}?saved=invalid&debug=validation_error`);
+    redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   }
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   
