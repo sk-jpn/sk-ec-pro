@@ -4,7 +4,8 @@ import { PdfDownloadButton } from "@/components/pdf-download-button";
 import { withBasePath } from "@/config/site";
 import { STAY_STATUSES, stayDate, yen } from "@/lib/stay/presentation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { reassignStayBookingCustomer, updateStayBooking, deleteStayBooking } from "../../actions";
+import { reassignStayBookingCustomer, updateStayBooking } from "../../actions";
+import { DeleteBookingForm } from "./delete-booking-form";
 import { PricingEditor } from "./pricing-editor";
 
 export default async function BookingAdminDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ linked?: string; saved?: string; deleted?: string }> }) {
@@ -66,10 +67,6 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
       <Button>保存</Button>
     </form>
 
-    {deletable && <form action={deleteStayBooking} className="mt-8 border-t border-red-200 pt-6">
-      <input type="hidden" name="id" value={id} />
-      <p className="mb-4 text-sm text-red-600">この予約はキャンセル済みです。カレンダーの空き状況を復元するには、予約を削除できます。この操作は元に戻せません。</p>
-      <Button variant="destructive" onClick={(event) => { if (!confirm("この予約を削除してもよろしいですか？この操作は元に戻せません。")) event.preventDefault(); }}>この予約を削除する</Button>
-    </form>}
+    {deletable && <DeleteBookingForm id={id} />}
   </>;
 }
