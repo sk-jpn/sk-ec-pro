@@ -5,6 +5,7 @@ import { PdfDownloadButton } from "@/components/pdf-download-button";
 import { withBasePath } from "@/config/site";
 import { requireStayUser } from "@/lib/stay/auth";
 import { PAYMENT_STATUSES, STAY_STATUSES, stayDate, stayPreviousDate, yen } from "@/lib/stay/presentation";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { OwnerContact } from "../../owner-contact";
 import { cancelStayBankTransfer, customerBookingAction, selectStayBankTransfer, startStayStripeCheckout } from "./actions";
 import { CancelBookingForm } from "./cancel-booking-form";
@@ -15,15 +16,30 @@ export default async function BookingDetail({ params, searchParams }: { params: 
   const { id } = await params;
   const q = await searchParams;
   const { customer, supabase } = await requireStayUser();
-  const { data: b } = await supabase.from("stay_bookings").select("*,stay_listings(name,code),stay_message_threads(id)").eq("id", id).eq("customer_id", customer.id).maybeSingle();
+  const { data: b } = await supabase.from("stay_bookings").select("*,stay_listings(name,code,max_guests,booking_enabled),stay_message_threads(id)").eq("id", id).eq("customer_id", customer.id).maybeSingle();
   if (!b) notFound();
-  const listing = b.stay_listings as unknown as { name: string; code: string };
+  const listing = b.stay_listings as unknown as { name: string; code: string; max_guests?: number; booking_enabled?: boolean };
   const thread = (b.stay_message_threads as unknown as { id: string }[])?.[0];
   const cancellable = ["pending_admin_review", "admin_reviewing", "awaiting_guest_confirmation"].includes(b.status);
   const payable = b.payment_status === "unpaid";
   const bankTransferPending = b.payment_status === "payment_pending" && b.payment_method === "bank_transfer";
   const stripePaymentPending = b.payment_status === "payment_pending" && b.payment_method === "stripe_card";
   const cardFeeRate = Number(b.card_fee_rate ?? 3.6);
+
+  // キャンセル済み予約 → Airbnbブロックがなければ再予約可能
+  const cancelledStatuses = ["guest_cancelled", "admin_cancelled", "expired", "no_show"];
+  const isCancelled = cancelledStatuses.includes(b.status);
+  let canRebook = false;
+  if (isCancelled && listing?.booking_enabled !== false) {
+    const admin = createSupabaseAdminClient();
+    const { data: airbnbBlocks } = await admin.from("stay_blocked_dates")
+      .select("id")
+      .eq("listing_id", b.listing_id)
+      .not("calendar_feed_id", "is", null)
+      .lt("start_date", b.check_out_date)
+      .gt("end_date", b.check_in_date);
+    canRebook = (airbnbBlocks?.length ?? 0) === 0;
+  }
 
   return <div className="mx-auto max-w-3xl">
     {q.created && <p className="mb-5 rounded-xl bg-emerald-50 p-4 text-emerald-800">予約リクエストを受け付けました。内容を確認後、メールでお知らせします。</p>}
@@ -79,6 +95,12 @@ export default async function BookingDetail({ params, searchParams }: { params: 
       </div>
     </section>}
     {b.payment_status === "paid" && <><div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 p-5 text-emerald-800 sm:flex-row sm:items-center sm:justify-between"><p className="font-bold">お支払い済みです。ありがとうございました。</p><PdfDownloadButton href={withBasePath(`/stay/mypage/bookings/${id}/receipt`)} label="領収書PDFをダウンロード" fileName={`receipt-${b.booking_number}.pdf`} receiptLanguage /></div><OwnerContact /></>}
+    {isCancelled && <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+      <h2 className="text-lg font-bold">{canRebook ? "この日程で再度予約できます" : "Airbnbカレンダーでブロックされているため、この日程では予約できません"}</h2>
+      {canRebook && <p className="mt-2 text-sm text-slate-600">同じ日程で再度予約リクエストを送信できます。空室状況は予約フォームでご確認ください。</p>}
+      {!canRebook && <p className="mt-2 text-sm text-slate-600">対象期間がAirbnbカレンダーでブロックされています。別の日程でお試しいただくか、オーナーへお問い合わせください。</p>}
+      {canRebook && <Button asChild className="mt-4"><Link href={`/stay/book/${b.listing_id}?checkIn=${b.check_in_date}&checkOut=${b.check_out_date}&guests=${b.guest_count}`}>再度予約する</Link></Button>}
+    </section>}
     <div className="mt-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
       {b.status === "awaiting_guest_confirmation" && <form action={customerBookingAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="action" value="confirm" /><Button>この内容で予約する</Button></form>}
       {cancellable && <div className="min-w-0 flex-1"><CancelBookingForm id={id} /></div>}
