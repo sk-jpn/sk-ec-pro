@@ -86,7 +86,7 @@ export async function updateStayBooking(formData:FormData){
       checkOutValid,
       datesValid,
     });
-    redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+    redirect(`/admin/stay/bookings/${id}?saved=invalid&debug=validation_error`);
   }
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   
@@ -108,7 +108,7 @@ export async function updateStayBooking(formData:FormData){
       status,
       allowedTransitions: transitions[previous],
     });
-    redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+    redirect(`/admin/stay/bookings/${id}?saved=invalid&debug=invalid_status_transition`);
   }
   const admin=createSupabaseAdminClient();
   const {data:current,error:fetchError}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at,customer_id').eq('id',id).maybeSingle();
@@ -125,7 +125,7 @@ export async function updateStayBooking(formData:FormData){
       bookingId: id,
       reason: "booking_not_found",
     });
-    redirect(`/admin/stay/bookings/${id}?saved=failed`);
+    redirect(`/admin/stay/bookings/${id}?saved=failed&debug=booking_not_found`);
   }
   if(checkIn!==previousCheckIn||checkOut!==previousCheckOut){
     console.error("[BOOKING DATE CHANGE]", {
@@ -191,7 +191,7 @@ export async function updateStayBooking(formData:FormData){
       reason: "database_error",
       error: error?.message,
     });
-    redirect(`/admin/stay/bookings/${id}?saved=failed`);
+    redirect(`/admin/stay/bookings/${id}?saved=failed&debug=database_error`);
   }
   if(status!==previous)await admin.from('stay_booking_status_history').insert({booking_id:id,previous_status:previous,new_status:status,changed_by_user_id:user.id,changed_by_role:'admin'});
 

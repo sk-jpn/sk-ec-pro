@@ -8,7 +8,7 @@ import { reassignStayBookingCustomer, updateStayBooking } from "../../actions";
 import { DeleteBookingForm } from "./delete-booking-form";
 import { PricingEditor } from "./pricing-editor";
 
-export default async function BookingAdminDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ linked?: string; saved?: string; deleted?: string }> }) {
+export default async function BookingAdminDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ linked?: string; saved?: string; deleted?: string; debug?: string }> }) {
   const { id } = await params;
   const q = await searchParams;
   const admin = createSupabaseAdminClient();
@@ -25,10 +25,12 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
     <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h1 className="text-3xl font-bold">{(b.stay_listings as unknown as { name: string }).name}</h1>{b.payment_status === "paid" && <PdfDownloadButton href={withBasePath(`/admin/stay/bookings/${id}/receipt`)} label="領収書PDFを表示" fileName={`receipt-${b.booking_number}.pdf`} openInNewTab receiptLanguage />}</div>
     {q.linked === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約を選択した宿泊顧客へリンクしました。</p>}
     {(q.linked === "failed" || q.linked === "invalid") && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">宿泊顧客へのリンクを変更できませんでした。</p>}
-    {q.saved === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約内容を保存しました。</p>}
-    {q.saved === "invalid" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">チェックイン・チェックアウト日を確認してください。</p>}
-    {q.saved === "conflict" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">選択期間には別の予約または手動ブロックがあります。</p>}
-    {q.saved === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約内容を保存できませんでした。</p>}
+  {q.saved === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約内容を保存しました。</p>}
+  {q.saved === "invalid" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">チェックイン・チェックアウト日を確認してください。</p>}
+  {q.saved === "conflict" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">選択期間には別の予約または手動ブロックがあります。</p>}
+  {q.saved === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約内容を保存できませんでした。</p>}
+  {/* Temporary debug message for investigation */}
+  {q.debug && <p className="mt-5 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-700">Debug: {q.debug}</p>}
     {q.deleted === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約の削除に失敗しました。</p>}
 
     <div className="mt-6 grid gap-4 rounded-xl bg-white p-6 sm:grid-cols-3">
