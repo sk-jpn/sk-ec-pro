@@ -65,8 +65,12 @@ export async function createRideBooking(formData: FormData) {
   const admin = createSupabaseAdminClient();
   let stayRoomCode="";
   if (stayBookingId) {
-    const { data: stay } = await admin.from("stay_bookings").select("id,stay_listings(code)").eq("id", stayBookingId).eq("customer_id", customer.id).maybeSingle();
+    const { data: stay } = await admin.from("stay_bookings").select("id,stay_listings(code),check_in_date,check_out_date").eq("id", stayBookingId).eq("customer_id", customer.id).maybeSingle();
     if (!stay) redirect("/stay/mypage/rides/new?error=invalid");
+    // Validate that ride date falls within stay booking dates
+    if (rideDate < stay.check_in_date || rideDate >= stay.check_out_date) {
+      redirect("/stay/mypage/rides/new?error=invalid_date");
+    }
     stayRoomCode=(stay.stay_listings as unknown as {code:string}|null)?.code??"";
   }
   try {
