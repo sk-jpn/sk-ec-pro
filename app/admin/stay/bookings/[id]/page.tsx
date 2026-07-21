@@ -26,11 +26,9 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
     {q.linked === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約を選択した宿泊顧客へリンクしました。</p>}
     {(q.linked === "failed" || q.linked === "invalid") && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">宿泊顧客へのリンクを変更できませんでした。</p>}
   {q.saved === "success" && <p className="mt-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">予約内容を保存しました。</p>}
-  {q.saved === "invalid" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">チェックイン・チェックアウト日を確認してください。</p>}
+  {q.saved === "invalid" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">入力内容を確認してください。</p>}
   {q.saved === "conflict" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">選択期間には別の予約または手動ブロックがあります。</p>}
   {q.saved === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約内容を保存できませんでした。</p>}
-  {/* Temporary debug message for investigation */}
-  {q.debug && <p className="mt-5 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-700">Debug: {q.debug}</p>}
     {q.deleted === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約の削除に失敗しました。</p>}
 
     <div className="mt-6 grid gap-4 rounded-xl bg-white p-6 sm:grid-cols-3">
