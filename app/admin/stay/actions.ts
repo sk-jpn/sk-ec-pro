@@ -4,6 +4,19 @@ export async function updateStayBooking(formData:FormData){
   const user=await requireAdminUser();
   const id=text(formData,'id',36),status=text(formData,'status',50),requestedPaymentStatus=text(formData,'paymentStatus',50),paymentMethod=text(formData,'paymentMethod',50),previous=text(formData,'previousStatus',50),previousCheckIn=text(formData,'previousCheckIn',10),previousCheckOut=text(formData,'previousCheckOut',10),checkIn=text(formData,'checkIn',10),checkOut=text(formData,'checkOut',10);
   
+  // Debug logging for investigation
+  console.error("[BOOKING UPDATE START]", {
+    bookingId: id,
+    status,
+    requestedPaymentStatus,
+    paymentMethod,
+    previous,
+    previousCheckIn,
+    previousCheckOut,
+    checkIn,
+    checkOut,
+  });
+  
   const paymentStatus=status==='paid'?'paid':requestedPaymentStatus;
   const allowed=['pending_admin_review','admin_reviewing','awaiting_guest_confirmation','confirmed','payment_pending','paid','check_in_scheduled','checked_in','checked_out','completed','guest_cancelled','admin_cancelled','expired','no_show'];
   const allowedPaymentStatuses=['unpaid','payment_pending','paid','refunded','partially_refunded'];
@@ -34,30 +47,152 @@ export async function updateStayBooking(formData:FormData){
   const checkOutValid = isValidDate(checkOut);
   const datesValid = checkInValid && checkOutValid && compareDates(checkIn, checkOut);
   
-  const allValidationPassed = allowed.includes(status) && 
-                             allowedPaymentStatuses.includes(paymentStatus) && 
-                             allowedPaymentMethods.includes(paymentMethod) && 
-                             datesValid;
+  // Detailed validation logging
+  const statusValid = allowed.includes(status);
+  const paymentStatusValid = allowedPaymentStatuses.includes(paymentStatus);
+  const paymentMethodValid = allowedPaymentMethods.includes(paymentMethod);
+  const allValidationPassed = statusValid && paymentStatusValid && paymentMethodValid && datesValid;
   
-  if(!allValidationPassed)redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  console.error("[BOOKING VALIDATION]", {
+    bookingId: id,
+    status,
+    paymentStatus,
+    paymentMethod,
+    checkIn,
+    checkOut,
+    statusValid,
+    paymentStatusValid,
+    paymentMethodValid,
+    checkInValid,
+    checkOutValid,
+    datesValid,
+    allValidationPassed,
+    statusCheck: allowed.includes(status),
+    paymentStatusCheck: allowedPaymentStatuses.includes(paymentStatus),
+    paymentMethodCheck: allowedPaymentMethods.includes(paymentMethod),
+    checkInValidation: checkInValid,
+    checkOutValidation: checkOutValid,
+    dateComparison: compareDates(checkIn, checkOut),
+  });
+  
+  if(!allValidationPassed) {
+    console.error("[BOOKING INVALID]", {
+      bookingId: id,
+      reason: "validation_error",
+      statusValid,
+      paymentStatusValid,
+      paymentMethodValid,
+      checkInValid,
+      checkOutValid,
+      datesValid,
+    });
+    redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  }
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
-  if(status!==previous&&!transitions[previous]?.includes(status))redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  
+  // Debug status transition validation
+  const transitionValid = status===previous || transitions[previous]?.includes(status);
+  console.error("[BOOKING STATUS TRANSITION]", {
+    bookingId: id,
+    previous,
+    status,
+    allowedTransitions: transitions[previous],
+    transitionValid,
+  });
+  
+  if(status!==previous&&!transitions[previous]?.includes(status)) {
+    console.error("[BOOKING INVALID]", {
+      bookingId: id,
+      reason: "invalid_status_transition",
+      previous,
+      status,
+      allowedTransitions: transitions[previous],
+    });
+    redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  }
   const admin=createSupabaseAdminClient();
-  const {data:current}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at,customer_id').eq('id',id).maybeSingle();
-  if(!current)redirect(`/admin/stay/bookings/${id}?saved=failed`);
+  const {data:current,error:fetchError}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at,customer_id').eq('id',id).maybeSingle();
+  
+  console.error("[BOOKING FETCH]", {
+    bookingId: id,
+    current,
+    fetchError: fetchError?.message || "No error",
+    hasCurrent: !!current,
+  });
+  
+  if(!current) {
+    console.error("[BOOKING INVALID]", {
+      bookingId: id,
+      reason: "booking_not_found",
+    });
+    redirect(`/admin/stay/bookings/${id}?saved=failed`);
+  }
   if(checkIn!==previousCheckIn||checkOut!==previousCheckOut){
+    console.error("[BOOKING DATE CHANGE]", {
+      bookingId: id,
+      checkIn,
+      checkOut,
+      previousCheckIn,
+      previousCheckOut,
+      checkInChanged: checkIn!==previousCheckIn,
+      checkOutChanged: checkOut!==previousCheckOut,
+    });
+    
     const blockingStatuses=['pending_admin_review','awaiting_guest_confirmation','confirmed','payment_pending','paid','checked_in'];
     const [{count:bookingConflicts},{count:blockConflicts}]=await Promise.all([
       admin.from('stay_bookings').select('id',{count:'exact',head:true}).eq('listing_id',current.listing_id).neq('id',id).in('status',blockingStatuses).lt('check_in_date',checkOut).gt('check_out_date',checkIn),
       admin.from('stay_blocked_dates').select('id',{count:'exact',head:true}).eq('listing_id',current.listing_id).is('calendar_feed_id',null).lt('start_date',checkOut).gt('end_date',checkIn),
     ]);
-    if((bookingConflicts??0)>0||(blockConflicts??0)>0)redirect(`/admin/stay/bookings/${id}?saved=conflict`);
+    
+    console.error("[BOOKING CONFLICT CHECK]", {
+      bookingId: id,
+      listingId: current.listing_id,
+      checkIn,
+      checkOut,
+      bookingConflicts,
+      blockConflicts,
+      totalConflicts: (bookingConflicts??0)+(blockConflicts??0),
+    });
+    
+    if((bookingConflicts??0)>0||(blockConflicts??0)>0) {
+      console.error("[BOOKING INVALID]", {
+        bookingId: id,
+        reason: "date_conflict",
+        bookingConflicts,
+        blockConflicts,
+      });
+      redirect(`/admin/stay/bookings/${id}?saved=conflict`);
+    }
   }
   const pricing=current.payment_status==='unpaid'?(()=>{const subtotal=num(formData,'subtotal'),additionalGuestFee=num(formData,'additionalGuestFee'),cleaningFee=num(formData,'cleaningFee'),discount=Math.min(num(formData,'discount'),subtotal+additionalGuestFee),totalAmount=num(formData,'totalAmount'),cardFeeRate=Math.min(100,num(formData,'cardFeeRate'));return{subtotal,additional_guest_fee:additionalGuestFee,cleaning_fee:cleaningFee,discount_amount:discount,total_amount:totalAmount,card_fee_rate:cardFeeRate,card_fee_amount:0}})():{subtotal:current.subtotal,additional_guest_fee:current.additional_guest_fee,cleaning_fee:current.cleaning_fee,discount_amount:current.discount_amount,total_amount:current.total_amount,card_fee_rate:current.card_fee_rate,card_fee_amount:current.card_fee_amount};
   const nights=Math.round((new Date(`${checkOut}T00:00:00Z`).getTime()-new Date(`${checkIn}T00:00:00Z`).getTime())/86400000);
   const update={check_in_date:checkIn,check_out_date:checkOut,nights,status,payment_status:paymentStatus,payment_method:paymentMethod||null,admin_message:text(formData,'adminMessage'),admin_memo:text(formData,'adminMemo',5000),...pricing,updated_at:new Date().toISOString(),...(status==='awaiting_guest_confirmation'?{admin_reviewed_at:new Date().toISOString()}:{}),...(paymentStatus==='paid'&&!current.paid_at?{paid_at:new Date().toISOString()}:{})};
+  
+  console.error("[BOOKING UPDATE QUERY]", {
+    bookingId: id,
+    previous,
+    currentPaymentStatus: current.payment_status,
+    previousCheckIn,
+    previousCheckOut,
+    updateData: update,
+  });
+  
   const {error}=await admin.from('stay_bookings').update(update).eq('id',id).eq('status',previous).eq('payment_status',current.payment_status).eq('check_in_date',previousCheckIn).eq('check_out_date',previousCheckOut);
-  if(error)redirect(`/admin/stay/bookings/${id}?saved=failed`);
+  
+  console.error("[BOOKING UPDATE RESULT]", {
+    bookingId: id,
+    error: error?.message || "No error",
+    hasError: !!error,
+  });
+  
+  if(error) {
+    console.error("[BOOKING INVALID]", {
+      bookingId: id,
+      reason: "database_error",
+      error: error?.message,
+    });
+    redirect(`/admin/stay/bookings/${id}?saved=failed`);
+  }
   if(status!==previous)await admin.from('stay_booking_status_history').insert({booking_id:id,previous_status:previous,new_status:status,changed_by_user_id:user.id,changed_by_role:'admin'});
 
   // 顧客へのメール送信
