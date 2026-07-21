@@ -4,10 +4,10 @@ import { PdfDownloadButton } from "@/components/pdf-download-button";
 import { withBasePath } from "@/config/site";
 import { STAY_STATUSES, stayDate, yen } from "@/lib/stay/presentation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { reassignStayBookingCustomer, updateStayBooking } from "../../actions";
+import { reassignStayBookingCustomer, updateStayBooking, deleteStayBooking } from "../../actions";
 import { PricingEditor } from "./pricing-editor";
 
-export default async function BookingAdminDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ linked?: string; saved?: string }> }) {
+export default async function BookingAdminDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ linked?: string; saved?: string; deleted?: string }> }) {
   const { id } = await params;
   const q = await searchParams;
   const admin = createSupabaseAdminClient();
@@ -17,6 +17,7 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
   ]);
   if (!b) notFound();
   const c = b.stay_customers as unknown as { name: string; email: string; phone: string };
+  const deletable = ["guest_cancelled", "admin_cancelled", "expired", "no_show"].includes(b.status);
 
   return <>
     <p className="text-xs font-bold text-emerald-600">{b.booking_number}</p>
@@ -27,6 +28,7 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
     {q.saved === "invalid" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">チェックイン・チェックアウト日を確認してください。</p>}
     {q.saved === "conflict" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">選択期間には別の予約または手動ブロックがあります。</p>}
     {q.saved === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約内容を保存できませんでした。</p>}
+    {q.deleted === "failed" && <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">予約の削除に失敗しました。</p>}
 
     <div className="mt-6 grid gap-4 rounded-xl bg-white p-6 sm:grid-cols-3">
       <p>顧客<br /><b>{c.name}</b><br />{c.email}<br />{c.phone}</p>
@@ -63,5 +65,11 @@ export default async function BookingAdminDetail({ params, searchParams }: { par
       <label>管理者メモ<textarea name="adminMemo" defaultValue={b.admin_memo} className="mt-1 min-h-24 w-full rounded-lg border p-3" /></label>
       <Button>保存</Button>
     </form>
+
+    {deletable && <form action={deleteStayBooking} className="mt-8 border-t border-red-200 pt-6">
+      <input type="hidden" name="id" value={id} />
+      <p className="mb-4 text-sm text-red-600">この予約はキャンセル済みです。カレンダーの空き状況を復元するには、予約を削除できます。この操作は元に戻せません。</p>
+      <Button variant="destructive" onClick={(event) => { if (!confirm("この予約を削除してもよろしいですか？この操作は元に戻せません。")) event.preventDefault(); }}>この予約を削除する</Button>
+    </form>}
   </>;
 }
