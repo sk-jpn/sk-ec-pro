@@ -1,11 +1,11 @@
 "use server";import { revalidatePath } from "next/cache";import { redirect } from "next/navigation";import { requireAdminUser } from "@/lib/auth/require-admin";import { createSupabaseAdminClient } from "@/lib/supabase/admin";import { syncStayCalendarFeedById,validatedAirbnbCalendarUrl } from "@/lib/stay/calendar-sync";import { notify } from "@/app/stay/book/[listingId]/actions";import { SITE_URL } from "@/config/site";
-const text=(f:FormData,n:string,max=2000)=>String(f.get(n)??'').trim().slice(0,max);const num=(f:FormData,n:string)=>Math.max(0,Number(f.get(n))||0);
+  const text=(f:FormData,n:string,max=2000)=>String(f.get(n)??'').trim().slice(0,max);const num=(f:FormData,n:string)=>Math.max(0,Number(f.get(n))||0);
 export async function updateStayBooking(formData:FormData){
   const user=await requireAdminUser();
   const id=text(formData,'id',36),status=text(formData,'status',50),requestedPaymentStatus=text(formData,'paymentStatus',50),paymentMethod=text(formData,'paymentMethod',50),previous=text(formData,'previousStatus',50),previousCheckIn=text(formData,'previousCheckIn',10),previousCheckOut=text(formData,'previousCheckOut',10),checkIn=text(formData,'checkIn',10),checkOut=text(formData,'checkOut',10);
   
-  // Debug logging for investigation
-  console.error("[BOOKING UPDATE START]", {
+  // Debug logging for investigation - log ALL form data
+  console.error("[BOOKING UPDATE START - ALL FORM DATA]", {
     bookingId: id,
     status,
     requestedPaymentStatus,
@@ -15,6 +15,11 @@ export async function updateStayBooking(formData:FormData){
     previousCheckOut,
     checkIn,
     checkOut,
+    // Log all form data entries
+    formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
+      key,
+      value: value instanceof File ? `File: ${value.name}` : String(value)
+    }))
   });
   
   const paymentStatus=status==='paid'?'paid':requestedPaymentStatus;
@@ -196,8 +201,8 @@ export async function updateStayBooking(formData:FormData){
       redirect(`/admin/stay/bookings/${id}?saved=conflict`);
     }
   }
-  const pricing=current.payment_status==='unpaid'?(()=>{const subtotal=num(formData,'subtotal'),additionalGuestFee=num(formData,'additionalGuestFee'),cleaningFee=num(formData,'cleaningFee'),discount=Math.min(num(formData,'discount'),subtotal+additionalGuestFee),totalAmount=num(formData,'totalAmount'),cardFeeRate=Math.min(100,num(formData,'cardFeeRate'));return{subtotal,additional_guest_fee:additionalGuestFee,cleaning_fee:cleaningFee,discount_amount:discount,total_amount:totalAmount,card_fee_rate:cardFeeRate,card_fee_amount:0}})():{subtotal:current.subtotal,additional_guest_fee:current.additional_guest_fee,cleaning_fee:current.cleaning_fee,discount_amount:current.discount_amount,total_amount:current.total_amount,card_fee_rate:current.card_fee_rate,card_fee_amount:current.card_fee_amount};
-  const nights=Math.round((new Date(`${checkOut}T00:00:00Z`).getTime()-new Date(`${checkIn}T00:00:00Z`).getTime())/86400000);
+  const pricing=current.payment_status==='unpaid'?(()=>{const subtotal=num(formData,'subtotal'),additionalGuestFee=num(formData,'additionalGuestFee'),cleaningFee=num(formData,'cleaningFee'),discount=Math.min(num(formData,'discount'),subtotal+additionalGuestFee+cleaningFee),totalAmount=num(formData,'totalAmount'),cardFeeRate=Math.min(100,num(formData,'cardFeeRate'));return{subtotal,additional_guest_fee:additionalGuestFee,cleaning_fee:cleaningFee,discount_amount:discount,total_amount:totalAmount,card_fee_rate:cardFeeRate,card_fee_amount:0}})():{subtotal:current.subtotal,additional_guest_fee:current.additional_guest_fee,cleaning_fee:current.cleaning_fee,discount_amount:current.discount_amount,total_amount:current.total_amount,card_fee_rate:current.card_fee_rate,card_fee_amount:current.card_fee_amount};
+  const nights=Math.max(1,Math.round((new Date(`${checkOut}T00:00:00Z`).getTime()-new Date(`${checkIn}T00:00:00Z`).getTime())/86400000));
   const update={check_in_date:checkIn,check_out_date:checkOut,nights,status,payment_status:paymentStatus,payment_method:paymentMethod||null,admin_message:text(formData,'adminMessage'),admin_memo:text(formData,'adminMemo',5000),...pricing,updated_at:new Date().toISOString(),...(status==='awaiting_guest_confirmation'?{admin_reviewed_at:new Date().toISOString()}:{}),...(paymentStatus==='paid'&&!current.paid_at?{paid_at:new Date().toISOString()}:{})};
   
   console.error("[BOOKING UPDATE QUERY]", {
