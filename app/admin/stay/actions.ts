@@ -1,4 +1,4 @@
-"use server";import { revalidatePath } from "next/cache";import { redirect } from "next/navigation";import { requireAdminUser } from "@/lib/auth/require-admin";import { createSupabaseAdminClient } from "@/lib/supabase/admin";import { syncStayCalendarFeedById,validatedAirbnbCalendarUrl } from "@/lib/stay/calendar-sync";
+"use server";import { revalidatePath } from "next/cache";import { redirect } from "next/navigation";import { requireAdminUser } from "@/lib/auth/require-admin";import { createSupabaseAdminClient } from "@/lib/supabase/admin";import { syncStayCalendarFeedById,validatedAirbnbCalendarUrl } from "@/lib/stay/calendar-sync";import { notify } from "@/app/stay/book/[listingId]/actions";import { SITE_URL } from "@/config/site";
 const text=(f:FormData,n:string,max=2000)=>String(f.get(n)??'').trim().slice(0,max);const num=(f:FormData,n:string)=>Math.max(0,Number(f.get(n))||0);
 export async function updateStayBooking(formData:FormData){
   const user=await requireAdminUser();
@@ -32,7 +32,7 @@ export async function updateStayBooking(formData:FormData){
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   if(status!==previous&&!transitions[previous]?.includes(status))redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   const admin=createSupabaseAdminClient();
-  const {data:current}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at').eq('id',id).maybeSingle();
+  const {data:current}=await admin.from('stay_bookings').select('listing_id,subtotal,additional_guest_fee,cleaning_fee,discount_amount,total_amount,card_fee_rate,card_fee_amount,payment_status,paid_at,customer_id').eq('id',id).maybeSingle();
   if(!current)redirect(`/admin/stay/bookings/${id}?saved=failed`);
   if(checkIn!==previousCheckIn||checkOut!==previousCheckOut){
     const blockingStatuses=['pending_admin_review','awaiting_guest_confirmation','confirmed','payment_pending','paid','checked_in'];
@@ -48,6 +48,16 @@ export async function updateStayBooking(formData:FormData){
   const {error}=await admin.from('stay_bookings').update(update).eq('id',id).eq('status',previous).eq('payment_status',current.payment_status).eq('check_in_date',previousCheckIn).eq('check_out_date',previousCheckOut);
   if(error)redirect(`/admin/stay/bookings/${id}?saved=failed`);
   if(status!==previous)await admin.from('stay_booking_status_history').insert({booking_id:id,previous_status:previous,new_status:status,changed_by_user_id:user.id,changed_by_role:'admin'});
+
+  // 顧客へのメール送信
+  const {data:bookingWithCustomer} = await admin.from('stay_bookings').select('stay_customers(name,email),booking_number').eq('id',id).single();
+  if(bookingWithCustomer){
+    const customer = bookingWithCustomer.stay_customers as unknown as {name: string, email: string};
+    const subject = `【SK EC Pro】予約内容が変更されました（${bookingWithCustomer.booking_number}）`;
+    const text = `${customer.name} 様\n\n予約内容が変更されました。\n${SITE_URL}/stay/mypage/bookings/${id}`;
+    await notify(id, current.customer_id, customer.email, customer.name, bookingWithCustomer.booking_number, subject, text).catch(e=>console.error("予約変更通知に失敗しました。",e));
+  }
+
   revalidatePath(`/admin/stay/bookings/${id}`);revalidatePath('/admin/stay/bookings');revalidatePath('/admin/stay/calendar');revalidatePath('/stay/search');revalidatePath(`/stay/mypage/bookings/${id}`);
   redirect(`/admin/stay/bookings/${id}?saved=success`);
 }
