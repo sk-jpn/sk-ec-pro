@@ -7,7 +7,28 @@ export async function updateStayBooking(formData:FormData){
   const allowed=['pending_admin_review','admin_reviewing','awaiting_guest_confirmation','confirmed','payment_pending','paid','check_in_scheduled','checked_in','checked_out','completed','guest_cancelled','admin_cancelled','expired','no_show'];
   const allowedPaymentStatuses=['unpaid','payment_pending','paid','refunded','partially_refunded'];
   const allowedPaymentMethods=['','bank_transfer','stripe_card','cash','card_manual','other'];
-  if(!allowed.includes(status)||!allowedPaymentStatuses.includes(paymentStatus)||!allowedPaymentMethods.includes(paymentMethod)||!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)||!/^\d{4}-\d{2}-\d{2}$/.test(checkOut)||checkOut<=checkIn)redirect(`/admin/stay/bookings/${id}?saved=invalid`);
+  
+  // More robust date validation
+  const isValidDate = (dateStr: string) => {
+    if (!dateStr || typeof dateStr !== 'string') return false;
+    // Check if it matches YYYY-MM-DD format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+    // Try to parse the date
+    const date = new Date(dateStr);
+    // Check if it's a valid date
+    if (isNaN(date.getTime())) return false;
+    // Check if the date string matches what we get when we convert back
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return date.getUTCFullYear() === year && 
+           date.getUTCMonth() === month - 1 && 
+           date.getUTCDate() === day;
+  };
+  
+  const checkInValid = isValidDate(checkIn);
+  const checkOutValid = isValidDate(checkOut);
+  const datesValid = checkInValid && checkOutValid && checkOut > checkIn;
+  
+  if(!allowed.includes(status)||!allowedPaymentStatuses.includes(paymentStatus)||!allowedPaymentMethods.includes(paymentMethod)||!datesValid)redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   const transitions:Record<string,string[]>={pending_admin_review:['admin_reviewing','awaiting_guest_confirmation','admin_cancelled','expired'],admin_reviewing:['awaiting_guest_confirmation','admin_cancelled','expired'],awaiting_guest_confirmation:['confirmed','admin_cancelled','expired'],confirmed:['payment_pending','paid','check_in_scheduled','admin_cancelled'],payment_pending:['paid','admin_cancelled'],paid:['check_in_scheduled','checked_in'],check_in_scheduled:['checked_in','no_show','admin_cancelled'],checked_in:['checked_out'],checked_out:['completed']};
   if(status!==previous&&!transitions[previous]?.includes(status))redirect(`/admin/stay/bookings/${id}?saved=invalid`);
   const admin=createSupabaseAdminClient();

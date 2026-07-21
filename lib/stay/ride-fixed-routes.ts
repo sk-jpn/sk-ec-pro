@@ -186,11 +186,22 @@ const K_ROUTES: RawRoute[] = [
 ];
 
 function fillRouteAddresses(routes: RawRoute[], address: string): FixedRouteOption[] {
-  return routes.map((r) => ({
-    ...r,
-    pickup: r.pickup ?? address,
-    destination: r.destination ?? address,
-  }));
+  return routes.map((r) => {
+    // Special handling for disney round trip route
+    if (r.id === "disney-round" && r.isRoundTrip) {
+      return {
+        ...r,
+        pickup: "滞在先/東京ディズニーリゾート",
+        destination: "東京ディズニーリゾート/滞在先",
+      };
+    }
+    
+    return {
+      ...r,
+      pickup: r.pickup ?? address,
+      destination: r.destination ?? address,
+    };
+  });
 }
 
 export function getTranslatedFixedRouteLabel(route: RawRoute, locale: string): string {
