@@ -1,0 +1,1 @@
+alter table public.stay_customers add column if not exists english_name text not null default '';
