@@ -48,7 +48,8 @@ const K_ROUTES: RawRoute[] = [
   { id: "stay-to-nrt", label: "滞在先→成田空港", destination: "成田空港", price: 18000 },
   { id: "hnd-to-stay", label: "羽田空港→滞在先", pickup: "羽田空港", price: 8000 },
   { id: "stay-to-hnd", label: "滞在先→羽田空港", destination: "羽田空港", price: 8000 },
-  { id: "disney-round", label: "滞在先↔東京ディズニーリゾート 往復", pickup: "東京ディズニーリゾート", destination: "東京ディズニーリゾート", price: 3000, isRoundTrip: true },
+  // disney-round: pickup/destination omitted so fillRouteAddresses fills both with stay address (round trip from stay)
+  { id: "disney-round", label: "滞在先↔東京ディズニーリゾート 往復", price: 3000, isRoundTrip: true },
   { id: "stay-to-disney", label: "滞在先→東京ディズニーリゾート", destination: "東京ディズニーリゾート", price: 2000 },
   { id: "disney-to-stay", label: "東京ディズニーリゾート→滞在先", pickup: "東京ディズニーリゾート", price: 2000 },
 ];
