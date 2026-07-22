@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { SITE_URL, withBasePath } from "@/config/site";
+import { withBasePath } from "@/config/site";
 import { stayLocales, type StayLocale } from "@/lib/stay/i18n";
 import { StayLanguageProvider, StayLanguageSwitcher } from "./stay-language";
 
-const stayDescription = "SK Stayの部屋予約ページです。空室と宿泊料金を確認し、オンラインで予約リクエストを送信できます。";
+const stayTitle = "宿泊予約｜SK STAY";
+const stayDescription = "以前ご宿泊いただいたお客様向けの宿泊予約ページです。空室と料金を確認し、予約リクエストを送信できます。";
+const stayUrl = "https://www.formosajapan.com/ec/stay";
+const stayOgImageUrl = `${stayUrl}/og-image.jpg`;
 
 export const metadata: Metadata = {
-  title: { default: "部屋予約｜SK Stay", template: "%s｜SK Stay" },
+  title: { default: stayTitle, template: "%s｜SK STAY" },
   description: stayDescription,
   robots: {
     index: false,
@@ -19,21 +22,21 @@ export const metadata: Metadata = {
       follow: false,
     },
   },
-  alternates: { canonical: `${SITE_URL}/stay` },
+  alternates: { canonical: stayUrl },
   openGraph: {
-    title: "部屋予約｜SK Stay",
+    title: stayTitle,
     description: stayDescription,
     type: "website",
-    url: `${SITE_URL}/stay`,
+    url: stayUrl,
     siteName: "SK Stay",
     locale: "ja_JP",
-    images: [{ url: `${SITE_URL}/stay/sk-stay-logo.png`, width: 948, height: 434, alt: "SK Stay" }],
+    images: [{ url: stayOgImageUrl, width: 1200, height: 630, alt: "SK Stay", type: "image/jpeg" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "部屋予約｜SK Stay",
+    title: stayTitle,
     description: stayDescription,
-    images: [`${SITE_URL}/stay/sk-stay-logo.png`],
+    images: [stayOgImageUrl],
   },
 };
 
