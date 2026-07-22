@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { BASE_PATH, SITE_URL, withBasePath } from "@/config/site";
+import { SITE_URL, withBasePath } from "@/config/site";
 import { stayLocales, type StayLocale } from "@/lib/stay/i18n";
 import { StayLanguageProvider, StayLanguageSwitcher } from "./stay-language";
 
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/stay`,
     siteName: "SK Stay",
     locale: "ja_JP",
-    images: [{ url: `${BASE_PATH}/stay/sk-stay-logo.png`, width: 948, height: 434, alt: "SK Stay" }],
+    images: [{ url: `${SITE_URL}/stay/sk-stay-logo.png`, width: 948, height: 434, alt: "SK Stay" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "部屋予約｜SK Stay",
     description: stayDescription,
-    images: [`${BASE_PATH}/stay/sk-stay-logo.png`],
+    images: [`${SITE_URL}/stay/sk-stay-logo.png`],
   },
 };
 
